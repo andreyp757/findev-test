@@ -1,0 +1,11 @@
+// Назначение файла: Отдельная компиляция фонового Worker.
+// WebWorker вместо DOM помогает не использовать API страницы внутри фонового потока.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/worker",
+    "lib": ["ES2022", "WebWorker"],
+    "types": []
+  },
+  "include": ["src/**/*.worker.ts"]
+}
