@@ -1,0 +1,24 @@
+# Назначение файла: Исключает зависимости, результаты тестов и воспроизводимые файлы сборки.
+# Исходники генератора отслеживаются; pkg, public/wasm и dist пересоздаются командами проекта.
+
+node_modules/
+dist/
+.angular/
+coverage/
+wasm/market-producer/target/
+wasm/market-producer/pkg/
+public/wasm/
+.DS_Store
+test-results/
+playwright-report/
+out-tsc/
+
+# Локальный русский путеводитель: не добавлять в публикацию.
+/docs/architecture-ru.html
+
+# Локальные результаты профилирования и heap/CPU-измерения.
+performance-results/
+
+# Local reference material and delivery preparation.
+/docs/
+/.delivery/

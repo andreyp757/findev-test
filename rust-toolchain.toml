@@ -1,0 +1,7 @@
+# Назначение файла: Фиксирует Rust и Wasm-цель для локальной работы и CI.
+# Rust 1.91 также нужен зафиксированным зависимостям инструмента wasm-pack 0.15.
+
+[toolchain]
+channel = "1.91.0"
+profile = "minimal"
+targets = ["wasm32-unknown-unknown"]
