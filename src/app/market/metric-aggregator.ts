@@ -25,8 +25,10 @@ export class MetricAggregator {
       !Number.isInteger(count) ||
       count < LIMITS.instrumentCount[0] ||
       count > LIMITS.instrumentCount[1]
-    )
+    ) {
       throw new Error("Invalid instrument count");
+    }
+
     this.rows = symbols(count).map((symbol) => ({
       symbol,
       last: null,
@@ -40,8 +42,10 @@ export class MetricAggregator {
   }
 
   process(batch: Uint32Array): void {
-    if (batch.length % UPDATE_WIDTH !== 0)
+    if (batch.length % UPDATE_WIDTH !== 0) {
       throw new Error("Invalid market batch length");
+    }
+
     // Сначала проверяем всю порцию: ошибочное обновление не должно частично изменить итоги.
     // Прямой доступ не создаёт два временных subarray-view на каждую сделку.
     for (let i = 0; i < batch.length; i += UPDATE_WIDTH) {
@@ -50,6 +54,7 @@ export class MetricAggregator {
       const quantity = batch[i + UPDATE_OFFSET.quantity];
       const bid = batch[i + UPDATE_OFFSET.bidCents];
       const ask = batch[i + UPDATE_OFFSET.askCents];
+
       if (
         !this.rows[index] ||
         price === 0 ||
@@ -61,6 +66,7 @@ export class MetricAggregator {
         throw new Error("Invalid market update");
       }
     }
+
     for (let i = 0; i < batch.length; i += UPDATE_WIDTH) {
       const index = batch[i + UPDATE_OFFSET.instrument];
       const price = batch[i + UPDATE_OFFSET.priceCents];
@@ -69,11 +75,14 @@ export class MetricAggregator {
       const ask = batch[i + UPDATE_OFFSET.askCents];
       const bidQuantity = batch[i + UPDATE_OFFSET.bidQuantity];
       const askQuantity = batch[i + UPDATE_OFFSET.askQuantity];
+
       const row = this.rows[index];
       row.last = price;
+
       // Преобразуем множители до умножения, чтобы большое произведение не округлилось в number.
       row.volume += BigInt(quantity);
       row.notional += BigInt(price) * BigInt(quantity);
+
       row.bid = bid;
       row.ask = ask;
       row.bidQuantity = bidQuantity;
