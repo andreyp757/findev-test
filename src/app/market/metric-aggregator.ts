@@ -15,9 +15,11 @@ interface Accumulator {
   bidQuantity: number;
   askQuantity: number;
 }
+
 /** Число записей пропорционально числу инструментов, а не сделок; суммы остаются точными. */
 export class MetricAggregator {
   private readonly rows: Accumulator[];
+
   constructor(count: number) {
     if (
       !Number.isInteger(count) ||
@@ -36,6 +38,7 @@ export class MetricAggregator {
       askQuantity: 0,
     }));
   }
+
   process(batch: Uint32Array): void {
     if (batch.length % UPDATE_WIDTH !== 0)
       throw new Error("Invalid market batch length");
@@ -77,6 +80,7 @@ export class MetricAggregator {
       row.askQuantity = askQuantity;
     }
   }
+
   snapshot(): readonly InstrumentMetrics[] {
     return this.rows.map((row) => ({
       symbol: row.symbol,

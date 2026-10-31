@@ -20,7 +20,9 @@ export const UPDATE_OFFSET = {
   bidQuantity: 5,
   askQuantity: 6,
 } as const;
+
 export const UPDATE_WIDTH = 7;
+
 export interface InstrumentMetrics {
   readonly symbol: string;
   readonly lastPriceCents: number | null;

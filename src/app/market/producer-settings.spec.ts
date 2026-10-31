@@ -9,6 +9,7 @@ import {
   symbols,
   validSettings,
 } from "./producer-settings";
+
 describe("settings", () => {
   it("has valid requested defaults", () => {
     expect(DEFAULT_SETTINGS).toEqual({

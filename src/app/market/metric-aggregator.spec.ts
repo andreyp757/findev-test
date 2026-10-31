@@ -5,9 +5,13 @@
 import { describe, expect, it } from "vitest";
 import { MetricAggregator } from "./metric-aggregator";
 import { imbalance, usd, usdRatio } from "./market-format";
+
 const batch = (...rows: number[][]) => new Uint32Array(rows.flat());
+
 const t1 = [0, 10000, 10, 9996, 10000, 600, 400];
+
 const t2 = [0, 10200, 30, 10196, 10200, 600, 400];
+
 describe("cumulative market metrics", () => {
   it("matches the mandatory example exactly, across separate batches", () => {
     const a = new MetricAggregator(1);
