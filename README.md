@@ -2,6 +2,8 @@
 
 Angular dashboard with a stateful Rust/WebAssembly simulator running in a dedicated Web Worker. All instruments and trades are fictional.
 
+**[Live demo](https://andreyp757.github.io/findev-test/)** · [Source](https://github.com/andreyp757/findev-test)
+
 ## Run locally
 
 Requires Node 22.22.3+ (see `.nvmrc`), npm, Rust/rustup and wasm-pack 0.15.0.
@@ -56,7 +58,7 @@ Optional sustained measurement: `npm run test:performance`. It builds production
 
 `npm run build` builds at `/`. `npm run build:pages` builds for `/findev-test/`. `npm run preview` serves that build at http://127.0.0.1:4173/findev-test/.
 
-GitHub Actions runs Rust, TypeScript, Wasm and browser checks before publishing. Pages must use GitHub Actions as its source and repository variable `ENABLE_PAGES=true`. The intended public URL is https://andreyp757.github.io/findev-test/; deployment is only complete when the workflow succeeds and the live app is verified. Hash routing preserves both pages on static hosting. Only `dist/terminal/browser` is published; local documentation is excluded from Git and from the build.
+GitHub Actions runs Rust, TypeScript, Wasm and browser checks before publishing. Pages must use GitHub Actions as its source and repository variable `ENABLE_PAGES=true`. The public app is available at https://andreyp757.github.io/findev-test/. On November 1, 2026, the deployment passed CI and a live Chromium check confirmed data generation, Pause/Resume, navigation and Apply, one Worker, successful Wasm loading and no page errors. Hash routing preserves both pages on static hosting. Only `dist/terminal/browser` is published; local documentation is excluded from Git and from the build.
 
 ## Design decisions and limitations
 
