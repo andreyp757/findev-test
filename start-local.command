@@ -1,6 +1,6 @@
 #!/bin/bash
-# Назначение файла: запуск проекта одной командой или двойным кликом в Finder.
-# Подключает доступные инструменты, проверяет зависимости и запускает стандартный npm start.
+# Launch the project with one command or a double-click in Finder.
+# Load available tools, check dependencies, and run npm start.
 set -euo pipefail
 
 PROJECT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -11,7 +11,7 @@ fail() {
   exit 1
 }
 
-# Порт можно выбрать явно; без аргументов сохраняем стандартный запуск.
+# Allow an explicit port; use the default when no arguments are provided.
 APP_PORT=4200
 if [[ $# -gt 0 ]]; then
   [[ $# -eq 2 && "$1" == "--port" ]] || fail 'Использование: ./start-local.command [--port 4300]'
@@ -21,17 +21,17 @@ fi
 APP_PORT=$((10#$APP_PORT))
 (( APP_PORT >= 1 && APP_PORT <= 65535 )) || fail 'Порт должен быть от 1 до 65535.'
 
-# Если временное окружение этой машины сохранилось, используем подготовленный Node.
+# Use the prepared Node environment if it still exists on this machine.
 if [[ -x /tmp/findev-node/node_modules/.bin/node ]]; then
   export PATH="/tmp/findev-node/node_modules/.bin:$PATH"
 fi
 
-# Сначала учитываем выбранный пользователем Cargo home или обычную установку rustup.
+# Prefer the user's Cargo home or the standard rustup installation.
 if [[ -d "${CARGO_HOME:-$HOME/.cargo}/bin" ]]; then
   export PATH="${CARGO_HOME:-$HOME/.cargo}/bin:$PATH"
 fi
 
-# Если инструментов нет в PATH, подключаем подготовленный Rust; настройки оболочки не меняем.
+# If tools are missing from PATH, use the prepared Rust environment without changing shell settings.
 if ! command -v cargo >/dev/null 2>&1 || ! command -v wasm-pack >/dev/null 2>&1; then
   if [[ -z "${CARGO_HOME:-}" && -z "${RUSTUP_HOME:-}" &&
         -x /tmp/findev-cargo/bin/cargo && -x /tmp/findev-cargo/bin/wasm-pack &&
@@ -47,7 +47,7 @@ for tool in node npm cargo wasm-pack; do
   command -v "$tool" >/dev/null 2>&1 || fail "Не найден $tool. Установи необходимые инструменты по README."
 done
 
-# Проверяем не только наличие cargo, но и доступность toolchain проекта.
+# Check that the project's toolchain is available, not just the cargo executable.
 cargo metadata --manifest-path wasm/market-producer/Cargo.toml --no-deps --format-version 1 >/dev/null || fail 'Cargo найден, но Rust проекта недоступен. Проверь rustup show.'
 
 node - <<'JS' || fail 'Версия Node не поддерживается. Нужна Node 22.22.3+, 24.15+ или 26.x.'
@@ -57,8 +57,8 @@ const supported = (major === 22 && (minor > 22 || (minor === 22 && patch >= 3)))
 if (!supported) process.exit(1);
 JS
 
-# npm ci выполняется при первом запуске скрипта и при изменении зависимостей или ABI Node.
-# Маркер лежит в игнорируемом node_modules и не попадает в репозиторий.
+# Run npm ci on first launch and whenever dependencies or the Node ABI change.
+# Store the marker in ignored node_modules to keep it out of the repository.
 DEPENDENCY_KEY="$(node - <<'JS'
 const { createHash } = require('node:crypto');
 const { readFileSync } = require('node:fs');
@@ -78,7 +78,7 @@ else
   printf 'Зависимости уже установлены и актуальны.\n'
 fi
 
-# Проверяем именно выбранный порт, чтобы Angular не сменил адрес незаметно.
+# Check the selected port so Angular cannot silently switch the address.
 node - "$APP_PORT" <<'JS' || fail "Порт $APP_PORT недоступен. Возможно, проект уже запущен: http://127.0.0.1:$APP_PORT/"
 const { createServer } = require('node:net');
 const server = createServer();

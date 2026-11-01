@@ -1,6 +1,6 @@
 /**
- * Назначение файла: Настраивает быстрые тесты TypeScript: файлы *.spec.ts и среду Node по умолчанию.
- * Тест сервиса выбирает jsdom своей директивой; browser-сценарии запускаются отдельно через Playwright.
+ * Run TypeScript *.spec.ts tests in Node by default.
+ * The service test opts into jsdom; Playwright runs browser scenarios separately.
  */
 import { defineConfig } from "vitest/config";
 export default defineConfig({

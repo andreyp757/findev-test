@@ -1,5 +1,5 @@
-// Назначение файла: Общие строгие правила TypeScript и шаблонов Angular.
-// Формат tsconfig поддерживает JSONC; исполняемые параметры ниже не изменены.
+// Shared strict checks for TypeScript and Angular templates.
+// tsconfig supports JSONC comments.
 {
   "compilerOptions": {
     "target": "ES2022",

@@ -5,8 +5,8 @@ import assert from "node:assert/strict";
 import { writeFile, readFile, mkdir } from "node:fs/promises";
 import os from "node:os";
 import { performance } from "node:perf_hooks";
-// Назначение: измеряет production в отдельном Chromium, проверяет точный учёт, паузу и освобождение Worker.
-// Наблюдатель хранит один последний снимок и гистограмму фиксированного размера; историю сделок не накапливает.
+// Profile production in a dedicated Chromium instance; verify exact counts, pause, and Worker disposal.
+// Retain only the latest snapshot and a fixed-size histogram, never trade history.
 const project = fileURLToPath(new URL("../", import.meta.url));
 const output = fileURLToPath(
   new URL(
@@ -56,7 +56,7 @@ const log = (message, data) =>
   );
 const save = () =>
   writeFile(`${output}/results.json`, JSON.stringify(result, null, 2));
-// Свой сервер на случайном свободном порту; не подключаемся к чужому dev-server.
+// Start a dedicated server on an available port to isolate the profiling run.
 const server = spawn(process.execPath, ["scripts/serve-production.mjs"], {
   cwd: project,
   env: { ...process.env, PORT: "0" },

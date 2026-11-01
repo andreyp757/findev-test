@@ -1,8 +1,4 @@
 // @vitest-environment jsdom
-/**
- * Назначение файла: Проверяет состояние Angular-сервиса и черновик формы через подменяемый Worker.
- * jsdom нужен для браузерных API; работа Wasm отдельно проверяется smoke- и настоящими browser-тестами.
- */
 import "@angular/compiler";
 import { Injector, runInInjectionContext } from "@angular/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

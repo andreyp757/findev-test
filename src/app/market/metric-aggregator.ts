@@ -1,7 +1,3 @@
-/**
- * Назначение файла: Независимый от Angular накопитель метрик, который в приложении используется внутри Worker.
- * Учитывает каждую сделку и хранит только точные суммы и последнюю котировку, без истории событий.
- */
 import { InstrumentMetrics, UPDATE_OFFSET, UPDATE_WIDTH } from "./market-data";
 import { LIMITS, symbols } from "./producer-settings";
 
@@ -16,7 +12,7 @@ interface Accumulator {
   askQuantity: number;
 }
 
-/** Число записей пропорционально числу инструментов, а не сделок; суммы остаются точными. */
+/** Storage scales with instruments rather than trades; totals remain exact. */
 export class MetricAggregator {
   private readonly rows: Accumulator[];
 
@@ -46,8 +42,8 @@ export class MetricAggregator {
       throw new Error("Invalid market batch length");
     }
 
-    // Сначала проверяем всю порцию: ошибочное обновление не должно частично изменить итоги.
-    // Прямой доступ не создаёт два временных subarray-view на каждую сделку.
+    // Validate the entire batch before changing totals to avoid partial updates on invalid input.
+    // Direct indexing avoids two temporary subarray views per trade.
     for (let i = 0; i < batch.length; i += UPDATE_WIDTH) {
       const index = batch[i + UPDATE_OFFSET.instrument];
       const price = batch[i + UPDATE_OFFSET.priceCents];
@@ -79,7 +75,7 @@ export class MetricAggregator {
       const row = this.rows[index];
       row.last = price;
 
-      // Преобразуем множители до умножения, чтобы большое произведение не округлилось в number.
+      // Convert operands before multiplication to avoid rounding large products as number.
       row.volume += BigInt(quantity);
       row.notional += BigInt(price) * BigInt(quantity);
 

@@ -1,5 +1,5 @@
-# Назначение файла: Автоматическая проверка проекта: Rust, TypeScript, реальный Wasm и production-браузер.
-# Публикация включается отдельно через ENABLE_PAGES; приватность репозитория здесь не меняется.
+# Validate Rust, TypeScript, real Wasm, and the production app in a browser.
+# ENABLE_PAGES controls deployment; this workflow does not change repository visibility.
 
 name: Verify and deploy
 on:
@@ -40,7 +40,7 @@ jobs:
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: dist/terminal/browser
-  # Без явного ENABLE_PAGES=true выполняются проверки и упаковка, но сайт не публикуется.
+  # Run checks and package the app without deployment unless ENABLE_PAGES=true.
   deploy:
     if: github.ref == 'refs/heads/main' && vars.ENABLE_PAGES == 'true'
     needs: verify

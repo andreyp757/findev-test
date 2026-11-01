@@ -1,0 +1,143 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.run-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 30px;
+
+  &__card {
+    min-width: 0;
+    padding: 21px 22px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+
+  &__label {
+    font: 11px var(--mono);
+    letter-spacing: 0.3px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__value {
+    font-family: var(--mono);
+    font-size: 32px;
+    font-weight: 450;
+    letter-spacing: -1.3px;
+    margin: 18px 0 15px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+
+    &--engine {
+      font-size: 26px;
+      padding: 4px 0;
+    }
+  }
+
+  &__unit {
+    display: inline-block;
+    max-width: 100%;
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0;
+  }
+
+  &__note {
+    overflow-wrap: anywhere;
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__plus {
+    font-size: 18px;
+    color: var(--muted);
+    margin: 0 10px;
+  }
+}
+
+@media (min-width: 1500px) {
+  .run-summary {
+    &__card {
+      padding: 25px;
+    }
+
+    &__value {
+      margin-top: 23px;
+      margin-bottom: 22px;
+    }
+  }
+}
+
+@media (max-width: 1100px) {
+  .run-summary {
+    &__card {
+      padding: 18px;
+    }
+
+    &__value {
+      font-size: 27px;
+
+      &--engine {
+        font-size: 23px;
+      }
+    }
+
+    &__label {
+      font-size: 11px;
+      letter-spacing: 0.4px;
+    }
+  }
+}
+
+@media (max-width: 760px) {
+  .run-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+
+    &__card {
+      padding: 16px;
+    }
+
+    &__label {
+      font-size: 11px;
+    }
+
+    &__value {
+      font-size: 26px;
+      margin: 15px 0 12px;
+
+      &--engine {
+        font-size: 21px;
+      }
+    }
+
+    &__unit {
+      font-size: 11px;
+    }
+
+    &__note {
+      font-size: 11px;
+    }
+
+    &__plus {
+      margin: 0 6px;
+    }
+  }
+}
+
+@media (max-width: 360px) {
+  .run-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

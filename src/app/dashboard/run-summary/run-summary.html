@@ -1,0 +1,46 @@
+<section class="run-summary" aria-label="Run summary">
+  <article class="run-summary__card">
+    <div class="run-summary__label">ACTIVE INSTRUMENTS</div>
+    <div class="run-summary__value">
+      {{ settings().instrumentCount }}
+      <span class="run-summary__unit">/ 50</span>
+    </div>
+    <div class="run-summary__note">
+      <span class="dot dot--accent"></span>
+      Unique market symbols
+    </div>
+  </article>
+
+  <article class="run-summary__card">
+    <div class="run-summary__label">TRADES PROCESSED</div>
+    <div class="run-summary__value">{{ integer(trades()) }}</div>
+    <div class="run-summary__note">
+      Across {{ integer(batches()) }} generated batches
+    </div>
+  </article>
+
+  <article class="run-summary__card">
+    <div class="run-summary__label">TARGET THROUGHPUT</div>
+    <div class="run-summary__value">
+      {{ throughput(rate()) }}
+      <span class="run-summary__unit">trades / s</span>
+    </div>
+    <div class="run-summary__note">
+      {{ settings().updatesPerBatch }} updates every
+      {{ settings().batchIntervalMs }} ms
+    </div>
+  </article>
+
+  <article class="run-summary__card">
+    <div class="run-summary__label">COMPUTE ENGINE</div>
+    <div class="run-summary__value run-summary__value--engine">
+      Rust
+      <span class="run-summary__plus">+</span>
+      Wasm
+    </div>
+    <div class="run-summary__note">
+      <span class="dot dot--accent"></span>
+      Dedicated Web Worker
+    </div>
+  </article>
+</section>

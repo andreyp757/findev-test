@@ -1,7 +1,3 @@
-/**
- * Назначение файла: Управляет жизнью производителя внутри Worker: генерацией, накоплением и доставкой снимков.
- * Один таймер, подтверждения ACK и версия epoch защищают от очередей, повторных циклов и поздней загрузки.
- */
 import { UPDATE_WIDTH } from "./market-data";
 import { MetricAggregator } from "./metric-aggregator";
 import { ProducerSettings, validSettings } from "./producer-settings";
@@ -35,7 +31,7 @@ export const realScheduler: Scheduler = {
   clear: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
 };
 
-/** Работает только в Worker: один повторно назначаемый timeout и проверка epoch после загрузки. */
+/** Worker-only runtime with one rescheduled timeout and an epoch check after loading. */
 export class ProducerRuntime {
   private runId = 0;
   private epoch = 0;
@@ -78,7 +74,7 @@ export class ProducerRuntime {
         if (this.running || this.settings === null) return;
         this.running = true;
         this.pausePending = false;
-        // Если Wasm ещё загружается, start() после await увидит последнее состояние паузы.
+        // If Wasm is still loading, start() reads the latest pause state after await.
         if (this.generator) {
           this.status("Running");
           this.schedule();
@@ -87,7 +83,7 @@ export class ProducerRuntime {
       case "ACK":
         if (command.sequence !== this.pending) return;
         this.pending = null;
-        // Пока UI отвечал, могла накопиться новая порция: выпускаем её без ожидания следующего тика.
+        // Flush any batch accumulated while awaiting the UI response without waiting for the next tick.
         this.publish(!this.running);
         this.confirmPause();
         break;
@@ -102,7 +98,7 @@ export class ProducerRuntime {
   ): Promise<void> {
     if (command.runId <= this.runId) return;
     this.dispose();
-    // Сохраняем версию жизни runtime: за время await мог прийти новый Apply или DISPOSE.
+    // Capture the runtime epoch: Apply or DISPOSE may arrive during await.
     const epoch = this.epoch;
     this.runId = command.runId;
     try {
@@ -123,7 +119,7 @@ export class ProducerRuntime {
         command.seed,
         command.wasmBaseUrl,
       );
-      // Логическая отмена: поздно созданный объект освобождаем, но не запускаем.
+      // Cancel stale initialization by freeing the late-created object without starting it.
       if (epoch !== this.epoch) {
         generator.free();
         return;
@@ -136,8 +132,8 @@ export class ProducerRuntime {
     }
   }
 
-  // Сроки считаем по монотонным часам: обработка порции не добавляется к каждому интервалу.
-  // Если следующий срок уже пропущен, ждём новый полный интервал без догоняющих порций.
+  // Use monotonic deadlines so batch processing does not extend every interval.
+  // If the next deadline is missed, wait a full interval instead of generating catch-up batches.
   private schedule(): void {
     if (
       this.timer !== null ||
@@ -184,7 +180,7 @@ export class ProducerRuntime {
       (!force && this.clock.now() - this.lastPublished < 150)
     )
       return;
-    // Занимаем единственный слот до ACK; новые сделки пока продолжают увеличивать накопления.
+    // Hold the single snapshot slot until ACK; new trades still update cumulative totals.
     this.pending = ++this.sequence;
     this.lastPublished = this.clock.now();
     this.dirty = false;
@@ -205,7 +201,7 @@ export class ProducerRuntime {
   }
 
   private confirmPause(): void {
-    // Сообщения Worker идут по порядку: финальные данные должны прийти в UI раньше Paused.
+    // Worker messages are ordered: deliver final data to the UI before Paused.
     if (this.pausePending && !this.dirty) {
       this.pausePending = false;
       this.status("Paused");
@@ -217,8 +213,8 @@ export class ProducerRuntime {
   }
 
   private fail(error: unknown): void {
-    // Завершающий ERROR несёт свои точные итоги, даже если обычный снимок ещё не подтверждён.
-    // Так сообщаемая ошибка не теряет уже успешно обработанные сделки.
+    // The terminal ERROR carries exact totals even when a regular snapshot awaits ACK.
+    // This preserves all successfully processed trades when reporting an error.
     const snapshot = this.settings ? this.snapshot() : undefined;
     this.dispose();
     this.post({

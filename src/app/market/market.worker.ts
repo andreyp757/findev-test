@@ -1,8 +1,4 @@
 /// <reference lib="webworker" />
-/**
- * Назначение файла: Точка входа фонового Worker: загружает настоящий Wasm и подключает ProducerRuntime.
- * Обёртка и имя бинарника входят в сборку Worker; DOM и компоненты Angular здесь не используются.
- */
 import init, {
   MarketGenerator,
 } from "../../../wasm/market-producer/pkg/market_producer";
@@ -10,12 +6,12 @@ import { WASM_ASSET_FILE } from "../../../wasm/market-producer/pkg/wasm-asset";
 import { ProducerRuntime } from "./producer-runtime";
 import { WorkerCommand } from "./worker-protocol";
 
-// Кешируем загрузку модуля на жизнь Worker, но сам генератор для каждого run создаём заново.
+// Cache the module for the Worker's lifetime, but create a new generator for each run.
 let initialized: Promise<unknown> | undefined;
 
 const runtime = new ProducerRuntime(
   async (count, seed, wasmBaseUrl) => {
-    // JS-обёртка уже включена в Worker; по сети загружается только бинарник нужной версии.
+    // The JS glue is bundled into the Worker; only the matching binary is fetched.
     initialized ??= init({
       module_or_path: new URL(WASM_ASSET_FILE, wasmBaseUrl).href,
     });

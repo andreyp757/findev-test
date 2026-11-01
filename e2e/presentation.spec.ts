@@ -1,4 +1,4 @@
-/** Регрессии review-v1: дробная скорость, читаемые подписи и локальное переполнение карточек. */
+/** Regression coverage for fractional rates, readable labels, and overflow within cards. */
 import { test, expect, type Page } from "@playwright/test";
 
 async function apply(page: Page, updates: number, interval: number) {
@@ -19,9 +19,9 @@ test("target throughput preserves fractions through the actual template", async 
 }) => {
   await page.goto("");
   const rate = page
-    .locator(".stat")
+    .locator(".run-summary__card")
     .filter({ hasText: "TARGET THROUGHPUT" })
-    .locator(".stat-value");
+    .locator(".run-summary__value");
   for (const [updates, interval, expected] of [
     [1, 2000, "0.5"],
     [1, 1500, "0.67"],
@@ -41,7 +41,7 @@ test("maximum throughput fits every summary card at 320px", async ({
   await apply(page, 1000, 50);
   await page.evaluate(() => document.fonts.ready);
   const overflow = await page
-    .locator(".stat")
+    .locator(".run-summary__card")
     .evaluateAll((nodes) =>
       nodes
         .filter((e) => e.scrollWidth > e.clientWidth + 1)
@@ -50,7 +50,7 @@ test("maximum throughput fits every summary card at 320px", async ({
   expect(overflow).toEqual([]);
 });
 
-// Длинные счётчики проверяем UI-фикстурой: не генерируем миллиарды сделок и не меняем production API.
+// Use a UI fixture for long counters without generating billions of trades or changing the production API.
 async function useLargeTotals(page: Page) {
   await page.addInitScript(() => {
     window.Worker = class {
@@ -105,24 +105,26 @@ for (const width of [320, 390, 1440]) {
     await apply(page, 1000, 50);
     await page.evaluate(() => document.fonts.ready);
     await expect(
-      page.locator(".stat").nth(1).locator(".stat-value"),
+      page.locator(".run-summary__card").nth(1).locator(".run-summary__value"),
     ).toHaveText("123,456,789,012,345,678,901,234,567,890");
     await expect(
-      page.locator(".imbalance-cell > span:first-child").first(),
+      page.locator(".instrument-table__imbalance > span:first-child").first(),
     ).toHaveText("0.00");
     const dimensions = await page.evaluate(() => ({
       pageOverflow: document.documentElement.scrollWidth > innerWidth + 1,
-      cards: Array.from(document.querySelectorAll(".stat")).map((e) => ({
-        text: e.textContent,
-        overflow: e.scrollWidth > e.clientWidth + 1,
-      })),
+      cards: Array.from(document.querySelectorAll(".run-summary__card")).map(
+        (e) => ({
+          text: e.textContent,
+          overflow: e.scrollWidth > e.clientWidth + 1,
+        }),
+      ),
     }));
     expect(dimensions.pageOverflow).toBe(false);
     expect(dimensions.cards.filter((c) => c.overflow)).toEqual([]);
-    // Таблица намеренно прокручивается внутри собственного контейнера.
+    // The table intentionally scrolls within its own container.
     expect(
       await page
-        .locator(".table-scroll")
+        .locator(".instrument-table__scroll")
         .evaluate((e) => getComputedStyle(e).overflowX),
     ).toBe("auto");
   });
@@ -134,7 +136,7 @@ test("secondary text remains readable on actual backgrounds", async ({
   await useLargeTotals(page);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("");
-  await expect(page.locator(".quantity-unit").first()).toBeVisible();
+  await expect(page.locator(".instrument-table__unit").first()).toBeVisible();
   const check = async (selectors: string[]) => {
     for (const selector of selectors)
       await expect(page.locator(selector).first()).toBeVisible();
@@ -160,7 +162,7 @@ test("secondary text remains readable on actual backgrounds", async ({
           ancestor = ancestor.parentElement
         ) {
           const background = getComputedStyle(ancestor);
-          // В текущей теме градиенты состоят из непрозрачных RGB-цветов: проверяем оба конца.
+          // Theme gradients use opaque RGB colors; check both endpoints.
           const stops = background.backgroundImage.match(/rgb\([^)]*\)/g);
           if (stops) {
             backgrounds.push(...stops.map(rgb));
@@ -196,17 +198,21 @@ test("secondary text remains readable on actual backgrounds", async ({
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     await check([
-      ".bottom-caption span:first-child",
-      ".quantity-unit",
-      ".symbol-cell small",
-      ".stat-label",
-      ".stat-note",
-      ".stat-unit",
-      ".app-footer > span:first-child",
-      ".eyebrow",
+      ".dashboard__caption span:first-child",
+      ".instrument-table__unit",
+      ".instrument-table__symbol small",
+      ".run-summary__label",
+      ".run-summary__note",
+      ".run-summary__unit",
+      ".app-shell__footer > div:first-child",
+      ".page-heading__eyebrow",
     ]);
   }
   await page.getByRole("link", { name: "Settings", exact: true }).click();
-  await expect(page.locator(".aside-footnote")).toBeVisible();
-  await check([".field-meta", ".input-wrap span", ".aside-footnote"]);
+  await expect(page.locator(".active-configuration__footnote")).toBeVisible();
+  await check([
+    ".settings-field__meta",
+    ".settings-field__input span",
+    ".active-configuration__footnote",
+  ]);
 });

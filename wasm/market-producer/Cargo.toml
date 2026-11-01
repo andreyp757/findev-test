@@ -1,5 +1,5 @@
-# Назначение файла: Пакет Rust: библиотека для WebAssembly (cdylib) и native-тестов (rlib).
-# Версия wasm-bindgen фиксирована для согласованной генерации JS-обёртки.
+# Build a WebAssembly library (cdylib) and a library for native tests (rlib).
+# Pin wasm-bindgen to keep generated JS glue compatible.
 
 [package]
 name = "market-producer"
@@ -16,12 +16,12 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 wasm-bindgen = "=0.2.100"
 
-# Релиз оптимизируется на размер: для браузера важен и объём загружаемого бинарника.
+# Optimize release size to reduce the browser download.
 [profile.release]
 lto = true
 opt-level = "s"
 codegen-units = 1
 
 [package.metadata.wasm-pack.profile.release]
-# Дополнительный wasm-opt отключён: сборке не требуется ещё один оптимизатор.
+# Disable wasm-opt to avoid an additional build dependency.
 wasm-opt = false

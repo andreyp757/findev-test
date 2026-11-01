@@ -1,7 +1,3 @@
-/**
- * Назначение файла: Точка входа приложения: создаёт корневой компонент Angular и подключает общие провайдеры.
- * Здесь выбираются zoneless-обновления и маршруты через #; рыночная логика остаётся в Worker.
- */
 import { provideZonelessChangeDetection } from "@angular/core";
 import { bootstrapApplication } from "@angular/platform-browser";
 import { provideRouter, withHashLocation } from "@angular/router";

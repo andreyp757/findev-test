@@ -1,11 +1,7 @@
-/**
- * Назначение файла: Общий контракт команд и событий между Angular и Worker.
- * Поле type различает варианты сообщения, а runId связывает каждый ответ с конкретным запуском.
- */
 import { InstrumentMetrics } from "./market-data";
 import { ProducerSettings } from "./producer-settings";
 
-/** Полный точный срез накоплений; используется и в обычном снимке, и при сообщаемой ошибке. */
+/** Exact cumulative totals shared by regular snapshots and error checkpoints. */
 export interface MarketSnapshot {
   rows: readonly InstrumentMetrics[];
   trades: bigint;
@@ -14,7 +10,7 @@ export interface MarketSnapshot {
 
 export type ProducerStatus = "Initializing" | "Running" | "Paused" | "Error";
 
-// Error передаётся только событием ERROR: у него обязательны сообщение и отдельная обработка.
+// Only ERROR events carry the Error status, ensuring a required message and dedicated handling.
 export type WorkerStatus = Exclude<ProducerStatus, "Error">;
 
 export type WorkerCommand =

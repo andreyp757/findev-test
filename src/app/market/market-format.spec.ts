@@ -1,4 +1,4 @@
-/** Проверяет точность представления больших сумм и округление при общем Intl.NumberFormat. */
+/** Tests exact formatting of large totals and rounding with a shared Intl.NumberFormat. */
 import { describe, expect, it } from "vitest";
 import { imbalance, integer, usd, usdRatio } from "./market-format";
 

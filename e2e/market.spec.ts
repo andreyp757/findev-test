@@ -1,7 +1,3 @@
-/**
- * Назначение файла: Проверяет собранное приложение в настоящем Chromium: интерфейс, Worker, Wasm и жизненный цикл.
- * Независимый повтор потока проверяет каждую строку; производственный накопитель не служит собственным эталоном.
- */
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import type { WorkerEvent } from "../src/app/market/worker-protocol";
@@ -42,7 +38,7 @@ test("real Wasm in one Worker; navigation, validation, pause and Apply", async (
   ).toBeEnabled();
   await expect(page.locator("tbody tr")).toHaveCount(5);
   await expect(
-    page.locator("tbody tr").first().locator(".price"),
+    page.locator("tbody tr").first().locator(".instrument-table__price"),
   ).not.toHaveText("N/A");
   expect(page.workers()).toHaveLength(1);
   expect(
@@ -60,6 +56,9 @@ test("real Wasm in one Worker; navigation, validation, pause and Apply", async (
   await page.waitForTimeout(650);
   expect(await page.locator("tbody").innerText()).toBe(paused);
   await page.getByRole("link", { name: "Settings", exact: true }).click();
+  await expect(
+    page.getByRole("link", { name: "Settings", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
   await page.getByLabel("Instrument count", { exact: true }).fill("1.5");
   await expect(
     page.getByRole("button", { name: "Apply settings" }),
@@ -84,11 +83,11 @@ test("real Wasm in one Worker; navigation, validation, pause and Apply", async (
   await expect(
     page.getByRole("button", { name: "Pause", exact: true }),
   ).toBeEnabled();
-  await expect(page.locator("tbody tr").first().locator(".price")).toHaveText(
-    "N/A",
-  );
   await expect(
-    page.locator("tbody tr").first().locator(".price"),
+    page.locator("tbody tr").first().locator(".instrument-table__price"),
+  ).toHaveText("N/A");
+  await expect(
+    page.locator("tbody tr").first().locator(".instrument-table__price"),
   ).not.toHaveText("N/A", { timeout: 4000 });
   expect(page.workers()).toHaveLength(1);
   expect(errors).toEqual([]);
@@ -97,7 +96,7 @@ test("real Wasm in one Worker; navigation, validation, pause and Apply", async (
 test("maximum settings remain responsive and aggregate every batch", async ({
   page,
 }) => {
-  // Наблюдаем реальный протокол сообщений, не подменяя производитель тестовым генератором.
+  // Observe the real message protocol without replacing the producer with a test generator.
   await page.addInitScript(() => {
     const BaseWorker = window.Worker;
     window.__snapshots = [];
@@ -154,7 +153,7 @@ test("maximum settings remain responsive and aggregate every batch", async ({
   await expect(
     page.getByRole("button", { name: "Resume", exact: true }),
   ).toBeEnabled();
-  // Фиксируем реакцию UI до повторного расчёта эталона, чтобы не измерять лишнюю работу.
+  // Capture UI response time before computing the reference to exclude test overhead.
   const pauseResponseMs = Date.now() - pauseStart;
   const elapsedMs = Date.now() - start;
   const samples = await page.evaluate(() =>
@@ -173,8 +172,8 @@ test("maximum settings remain responsive and aggregate every batch", async ({
     module_or_path: await readFile(`public/wasm/${WASM_ASSET_FILE}`),
   });
   const replay = new MarketGenerator(50, 0x12345678);
-  // Независимый эталон: только в тесте сохраняем повтор потока и группируем сделки.
-  // Формулы считаем напрямую, иначе ошибка общего накопителя могла бы совпасть с ошибкой эталона.
+  // Independent reference: only this test retains the replayed stream and groups trades.
+  // Compute formulas directly so a shared aggregator bug cannot affect both results.
   const history: number[][][] = Array.from({ length: 50 }, () => []);
   try {
     for (let i = 0; i < last.batches; i++) {
@@ -249,7 +248,7 @@ test("Wasm load failure is visible and retry recovers", async ({
     page.getByRole("button", { name: "Pause", exact: true }),
   ).toBeEnabled();
   await expect(
-    page.locator("tbody tr").first().locator(".price"),
+    page.locator("tbody tr").first().locator(".instrument-table__price"),
   ).not.toHaveText("N/A");
 });
 
@@ -310,7 +309,7 @@ test("hung Wasm startup times out and can be retried", async ({
     page.getByRole("button", { name: "Pause", exact: true }),
   ).toBeEnabled();
   await expect(
-    page.locator("tbody tr").first().locator(".price"),
+    page.locator("tbody tr").first().locator(".instrument-table__price"),
   ).not.toHaveText("N/A");
 });
 

@@ -1,5 +1,5 @@
-# Назначение файла: Исключает зависимости, результаты тестов и воспроизводимые файлы сборки.
-# Исходники генератора отслеживаются; pkg, public/wasm и dist пересоздаются командами проекта.
+# Exclude dependencies, test results, and reproducible build artifacts.
+# Track generator sources; project commands regenerate pkg, public/wasm, and dist.
 
 node_modules/
 dist/
@@ -13,10 +13,10 @@ test-results/
 playwright-report/
 out-tsc/
 
-# Локальный русский путеводитель: не добавлять в публикацию.
+# Keep local documentation out of the published repository.
 /docs/architecture-ru.html
 
-# Локальные результаты профилирования и heap/CPU-измерения.
+# Local profiling results and heap/CPU measurements.
 performance-results/
 
 # Local reference material and delivery preparation.

@@ -1,7 +1,3 @@
-/**
- * Назначение файла: Собирает Rust/Wasm и автоматически готовит бинарник для Angular.
- * Имя по хешу связывает содержимое Wasm с его Worker/glue и защищает от старого браузерного кеша.
- */
 import { spawnSync } from "node:child_process";
 import {
   mkdirSync,
@@ -34,7 +30,7 @@ if (result.error) {
   process.exit(1);
 }
 if (result.status !== 0) process.exit(result.status ?? 1);
-// Новое содержимое получает новый URL: кеш не должен подставлять старый Wasm новому glue.
+// Content-based URLs prevent cached Wasm from being paired with incompatible JS glue.
 const bytes = readFileSync("wasm/market-producer/pkg/market_producer_bg.wasm");
 const digest = createHash("sha256").update(bytes).digest("hex").slice(0, 16);
 const filename = `market_producer.${digest}.wasm`;
@@ -48,7 +44,7 @@ for (const old of readdirSync("public/wasm")) {
   )
     unlinkSync(`public/wasm/${old}`);
 }
-// Создаём рядом с glue константу имени: её импортирует Worker, а не основной поток.
+// Write the filename constant beside the glue for the Worker to import.
 writeFileSync(
   "wasm/market-producer/pkg/wasm-asset.js",
   `export const WASM_ASSET_FILE = ${JSON.stringify(filename)};\n`,

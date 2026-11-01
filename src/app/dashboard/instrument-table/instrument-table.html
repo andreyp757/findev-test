@@ -1,0 +1,113 @@
+<section class="instrument-table" aria-labelledby="instruments-heading">
+  <div class="panel-heading">
+    <div>
+      <h2 id="instruments-heading">
+        Instruments
+        <span class="instrument-table__count">{{ rows().length }}</span>
+      </h2>
+      <p>Cumulative metrics for the current run</p>
+    </div>
+    <div class="instrument-table__run">
+      <span class="dot"></span>
+      RUN {{ runId().toString().padStart(3, "0") }}
+      <span class="instrument-table__separator">|</span>
+      USD
+    </div>
+  </div>
+
+  <div class="instrument-table__scroll">
+    <table>
+      <caption class="visually-hidden">
+        Live fictional instrument prices and cumulative trade metrics in USD
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">SYMBOL</th>
+          <th scope="col">LAST PRICE</th>
+          <th scope="col">BID-ASK SPREAD</th>
+          <th scope="col">TRADING VOLUME</th>
+          <th scope="col">
+            <abbr title="Volume-weighted average price">VWAP</abbr>
+          </th>
+          <th scope="col">BOOK IMBALANCE</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (row of rows(); track row.symbol; let i = $index) {
+          <tr>
+            <th scope="row">
+              <div class="instrument-table__symbol">
+                <span
+                  class="instrument-table__icon"
+                  [class.instrument-table__icon--alternate]="i % 2 === 1">
+                  {{ row.symbol.slice(0, 1) }}
+                </span>
+                <div>
+                  {{ row.symbol }}
+                  <small>SIMULATED EQUITY</small>
+                </div>
+              </div>
+            </th>
+            <td class="instrument-table__price">
+              {{ usd(row.lastPriceCents) }}
+            </td>
+            <td class="instrument-table__spread">{{ usd(row.spreadCents) }}</td>
+            <td>
+              {{ integer(row.volume) }}
+              <span class="instrument-table__unit">sh</span>
+            </td>
+            <td>{{ usdRatio(row.notionalCents, row.volume) }}</td>
+            <td>
+              <div class="instrument-table__imbalance">
+                <span
+                  class="instrument-table__value"
+                  [class.instrument-table__value--positive]="
+                    (row.imbalance ?? 0) > 0
+                  "
+                  [class.instrument-table__value--negative]="
+                    (row.imbalance ?? 0) < 0
+                  ">
+                  {{ imbalance(row.imbalance) }}
+                </span>
+                <span class="instrument-table__track" aria-hidden="true">
+                  <span class="instrument-table__center"></span>
+                  <span
+                    class="instrument-table__fill"
+                    [class.instrument-table__fill--sell]="
+                      (row.imbalance ?? 0) < 0
+                    "
+                    [style.left.%]="
+                      (row.imbalance ?? 0) < 0
+                        ? 50 + (row.imbalance ?? 0) * 50
+                        : 50
+                    "
+                    [style.width.%]="abs(row.imbalance ?? 0) * 50"></span>
+                </span>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="instrument-table__footer">
+    <div class="instrument-table__feed">
+      <span class="dot dot--accent"></span>
+      {{
+        status() === "Paused"
+          ? "Feed paused · totals preserved"
+          : status() === "Running"
+            ? "Feed active · all trades aggregated"
+            : status() === "Error"
+              ? "Feed stopped · see error above"
+              : "Loading WebAssembly engine…"
+      }}
+    </div>
+    <div>
+      {{ rows().length }} instruments
+      <span class="instrument-table__separator">·</span>
+      Snapshots ≤ 7 / s
+    </div>
+  </div>
+</section>

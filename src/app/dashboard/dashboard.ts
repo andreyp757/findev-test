@@ -1,47 +1,24 @@
-/**
- * Назначение файла: Экран рынка: отображает сигналы сервиса и передаёт действия Pause / Resume.
- * Компонент форматирует готовые значения; генератор и накопление сделок работают в Worker.
- */
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-} from "@angular/core";
+import { Component, inject } from "@angular/core";
 import { RouterLink } from "@angular/router";
 import { MarketEngine } from "../market/market-engine";
-import {
-  imbalance,
-  integer,
-  throughput,
-  usd,
-  usdRatio,
-} from "../market/market-format";
+import { RunSummary } from "./run-summary/run-summary";
+import { InstrumentTable } from "./instrument-table/instrument-table";
 
 @Component({
   selector: "app-dashboard",
-  imports: [RouterLink],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: "dashboard" },
+  imports: [RouterLink, RunSummary, InstrumentTable],
   templateUrl: "./dashboard.html",
-  styleUrl: "./dashboard.css",
+  styleUrl: "./dashboard.scss",
 })
 export class Dashboard {
   readonly engine = inject(MarketEngine);
-  readonly integer = integer;
-  readonly throughput = throughput;
-  readonly usd = usd;
-  readonly usdRatio = usdRatio;
-  readonly imbalance = imbalance;
-  readonly abs = Math.abs;
-  readonly rate = computed(
-    () =>
-      (this.engine.settings().updatesPerBatch * 1000) /
-      this.engine.settings().batchIntervalMs,
-  );
 
   toggle(): void {
-    this.engine.status() === "Paused"
-      ? this.engine.resume()
-      : this.engine.pause();
+    if (this.engine.status() === "Paused") {
+      this.engine.resume();
+    } else {
+      this.engine.pause();
+    }
   }
 }

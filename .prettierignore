@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.angular/
+.delivery/
+docs/
+public/wasm/
+wasm/market-producer/pkg/
+wasm/market-producer/target/

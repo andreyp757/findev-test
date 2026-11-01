@@ -1,5 +1,5 @@
-// Назначение файла: Отдельная компиляция фонового Worker.
-// WebWorker вместо DOM помогает не использовать API страницы внутри фонового потока.
+// Compile the background Worker separately.
+// WebWorker types exclude page-only DOM APIs from the background thread.
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {

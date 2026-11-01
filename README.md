@@ -65,3 +65,11 @@ GitHub Actions runs Rust, TypeScript, Wasm and browser checks before publishing.
 The code groups market contracts, runtime and tests together in `src/app/market`, with separate `dashboard` and `settings` components. No backend, state-management framework or component library is needed for two pages. There is no event history: retained records scale with at most 50 instruments, while integer totals grow in precision over time. The simulator is deterministic, not a realistic exchange or a cryptographic random source. Background tabs may throttle timers. Browser automation targets Chromium. Fonts have system fallbacks. Settings reset on reload.
 
 Angular 22 is used instead of the original Angular 19 baseline; Node, Rust and dependency versions are pinned for reproducibility. Generated `public/wasm` and `wasm/market-producer/pkg` are rebuilt automatically and are not committed.
+
+## UI structure and formatting
+
+Dashboard and Settings remain route containers. `RunSummary`, `InstrumentTable` and `ActiveConfiguration` receive typed signal inputs and use OnPush; only the root `MarketEngine` owns the Worker. The settings form keeps its local draft on the Settings page.
+
+Styles use SCSS and BEM (`block__element--modifier`). Component styles live beside their templates; shared tokens and primitives live in `src/styles.scss`. Inline text and glyphs use `span`, layout groups use block elements, and the table retains native table semantics.
+
+Run `npm run format` to format source files. Angular templates keep the closing bracket on the last attribute line through `.prettierrc.json`. Local documents and generated output are excluded through `.prettierignore`.

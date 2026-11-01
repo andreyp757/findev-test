@@ -1,8 +1,4 @@
-/**
- * Назначение файла: Экран настроек с проверяемым черновиком Reactive Form.
- * Поля не управляют работающим производителем напрямую: только Apply начинает новый запуск.
- */
-import { ChangeDetectionStrategy, Component, inject } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import {
   AbstractControl,
   FormControl,
@@ -13,6 +9,7 @@ import {
 import { RouterLink } from "@angular/router";
 import { MarketEngine } from "../market/market-engine";
 import { LIMITS, ProducerSettings } from "../market/producer-settings";
+import { ActiveConfiguration } from "./active-configuration/active-configuration";
 import { integer } from "../market/market-format";
 
 const integerValidator = (control: AbstractControl) =>
@@ -32,10 +29,9 @@ function control(value: number, min: number, max: number): FormControl<number> {
 
 @Component({
   selector: "app-settings",
-  imports: [ReactiveFormsModule, RouterLink],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ReactiveFormsModule, RouterLink, ActiveConfiguration],
   templateUrl: "./settings.html",
-  styleUrl: "./settings.css",
+  styleUrl: "./settings.scss",
 })
 export class Settings {
   readonly integer = integer;
@@ -68,7 +64,7 @@ export class Settings {
       unit: "ms",
     },
   ];
-  // Контролы хранят локальный черновик. Рынок увидит его только после успешной валидации Apply.
+  // Controls hold a local draft; Apply updates the market only after validation succeeds.
   readonly form = new FormGroup({
     instrumentCount: control(
       this.engine.settings().instrumentCount,
@@ -93,7 +89,9 @@ export class Settings {
   apply(): void {
     this.form.markAllAsTouched();
     this.feedback = "";
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      return;
+    }
     if (this.engine.apply(this.form.getRawValue())) {
       this.feedback = `Settings applied. Initializing run ${this.engine.runId()}.`;
       this.form.markAsPristine();

@@ -1,6 +1,6 @@
 /**
- * Назначение файла: Настраивает browser-тесты production-сборки под путём репозитория GitHub Pages.
- * Поднимает локальный preview и сохраняет трассу сбоя; один исполнитель упрощает измерения нагрузки.
+ * Test the production build under the GitHub Pages repository path.
+ * Start a local preview and retain failure traces; one worker keeps load measurements isolated.
  */
 import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({

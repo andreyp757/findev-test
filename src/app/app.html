@@ -1,36 +1,54 @@
-<!-- Назначение: разметка оболочки приложения; логика находится в соседнем TypeScript-файле. -->
-<a class="skip-link" href="#main" (click)="skipToMain($event)"
-  >Skip to content</a
->
-<header class="app-header">
-  <a class="brand" routerLink="/" aria-label="FinDev home"
-    ><span class="brand-mark">f<span>↗</span></span
-    >fin<span class="brand-light">dev</span
-    ><span class="brand-tag">TERMINAL</span></a
-  >
-  <nav aria-label="Main navigation">
-    <a
-      routerLink="/"
-      routerLinkActive="active"
-      [routerLinkActiveOptions]="{ exact: true }"
-      ><span aria-hidden="true">▦</span> Dashboard</a
-    >
-    <a routerLink="/settings" routerLinkActive="active"
-      ><span aria-hidden="true">⚙</span> Settings</a
-    >
+<a class="app-shell__skip" href="#main" (click)="skipToMain($event)">
+  Skip to content
+</a>
+
+<header class="app-shell__header">
+  <a class="brand" routerLink="/" aria-label="FinDev home">
+    <span class="brand__mark">
+      f
+      <span>↗</span>
+    </span>
+    fin
+    <span class="brand__light">dev</span>
+    <span class="brand__tag">TERMINAL</span>
+  </a>
+
+  <nav class="app-nav" aria-label="Main navigation">
+    <a routerLink="/"
+      class="app-nav__link"
+      routerLinkActive="app-nav__link--active"
+      ariaCurrentWhenActive="page"
+      [routerLinkActiveOptions]="{ exact: true }">
+      <span aria-hidden="true">▦</span>
+      Dashboard
+    </a>
+
+    <a routerLink="/settings"
+      class="app-nav__link"
+      routerLinkActive="app-nav__link--active"
+      ariaCurrentWhenActive="page">
+      <span aria-hidden="true">⚙</span>
+      Settings
+    </a>
   </nav>
-  <div class="header-meta">
-    <span
-      class="connection-dot"
-      [class.live]="engine.status() === 'Running'"
-    ></span
-    >Simulation environment<span class="avatar">AP</span>
+
+  <div class="app-shell__meta">
+    <span class="connection-dot" [class.connection-dot--live]="engine.status() === 'Running'"></span>
+    Simulation environment
+    <span class="app-shell__avatar">AP</span>
   </div>
 </header>
-<main id="main" tabindex="-1"><router-outlet /></main>
-<footer class="app-footer">
-  <span
-    ><span class="tiny-dot"></span> Fictional instruments. Real-time
-    computation.</span
-  ><span>ANGULAR <i>/</i> RUST <i>/</i> WEBASSEMBLY</span>
+
+<main class="app-shell__main" id="main" tabindex="-1">
+  <router-outlet />
+</main>
+
+<footer class="app-shell__footer">
+  <div>
+    <span class="dot"></span>
+    Fictional instruments. Real-time computation.
+  </div>
+  <div>
+    ANGULAR <i>/</i> RUST <i>/</i> WEBASSEMBLY
+  </div>
 </footer>

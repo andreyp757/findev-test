@@ -1,17 +1,13 @@
-/**
- * Назначение файла: Общая оболочка: шапка, навигация, область текущей страницы и подвал.
- * Получение корневого MarketEngine запускает один движок, который переживает смену экранов.
- */
-import { ChangeDetectionStrategy, Component, inject } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import { RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
 import { MarketEngine } from "./market/market-engine";
 
 @Component({
   selector: "app-root",
+  host: { class: "app-shell" },
   imports: [RouterLink, RouterLinkActive, RouterOutlet],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: "./app.html",
-  styleUrl: "./app.css",
+  styleUrl: "./app.scss",
 })
 export class App {
   readonly engine = inject(MarketEngine);

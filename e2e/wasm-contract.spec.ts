@@ -1,4 +1,4 @@
-/** Проверяет реальный Wasm и TypeScript-декодер в Node: ABI, границы и освобождение объектов. */
+/** Tests real Wasm and the TypeScript decoder in Node: ABI, bounds, and object disposal. */
 import assert from "node:assert/strict";
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
@@ -20,7 +20,7 @@ test("Wasm ABI field order and TS decoding match the fixed seed-42 fixture", () 
   const generator = new MarketGenerator(2, 42);
   try {
     const batch = generator.generateBatch(3);
-    // Фиксированная golden fixture закрепляет все семь позиций, включая разные bid/ask quantities.
+    // The golden fixture locks all seven field offsets, including distinct bid/ask quantities.
     expect(Array.from(batch)).toEqual([
       0, 9984, 57, 9984, 9994, 136, 83, 0, 9970, 28, 9970, 9980, 795, 434, 1,
       12503, 48, 12503, 12505, 700, 566,
@@ -63,7 +63,7 @@ test("Wasm accepts TS endpoint limits and produces valid simulator fields", () =
         for (let i = 0; i < batch.length; i += 7) {
           const [index, price, quantity, bid, ask, bidQuantity, askQuantity] =
             batch.subarray(i, i + 7);
-          // Обычные assert в цикле не создают тысячи Playwright trace-шагов.
+          // Plain assertions avoid thousands of Playwright trace steps inside the loop.
           assert.ok(index < instruments, `instrument at offset ${i}`);
           assert.ok(
             price === bid || price === ask,
@@ -95,7 +95,7 @@ test("Wasm rejects out-of-range integer sizes without advancing generator state"
     LIMITS.instrumentCount[0] - 1,
     LIMITS.instrumentCount[1] + 1,
   ]) {
-    // Освобождение выполняется и если контракт случайно изменится и неверный constructor начнёт проходить.
+    // Free the object even if a regression allows invalid constructor arguments.
     let unexpected: MarketGenerator | undefined;
     try {
       expect(() => {
@@ -119,5 +119,5 @@ test("Wasm rejects out-of-range integer sizes without advancing generator state"
     generator.free();
     reference.free();
   }
-  // Дроби/NaN проверяются validSettings до вызова Wasm: u32 на JS-границе может приводить числа к целым.
+  // validSettings rejects fractions and NaN before Wasm: the JS boundary can coerce values to u32.
 });

@@ -1,101 +1,92 @@
-<!-- Назначение: разметка экрана settings; логика находится в соседнем TypeScript-файле. -->
-<div class="page-kicker">
-  <span class="eyebrow">WORKSPACE</span><span class="slash">/</span> Producer
-  settings
+<div class="page-heading__breadcrumb">
+  <span class="page-heading__eyebrow">WORKSPACE</span>
+  <span class="page-heading__separator">/</span>
+  Producer settings
 </div>
+
 <section class="page-heading">
   <div>
-    <div class="heading-line">
+    <div class="page-heading__title">
       <h1>Producer settings</h1>
-      <span class="badge">Configuration</span>
+      <span class="page-heading__badge">Configuration</span>
     </div>
     <p>Set the pace. Build a market that fits your workload.</p>
   </div>
-  <a class="text-link" routerLink="/">← Back to dashboard</a>
+  <a class="settings__back" routerLink="/">← Back to dashboard</a>
 </section>
-<div class="settings-layout">
-  <form class="settings-panel" [formGroup]="form" (ngSubmit)="apply()">
+
+<div class="settings">
+  <form class="settings__form" [formGroup]="form" (ngSubmit)="apply()">
     <div class="panel-heading">
       <div>
         <h2>Market generation</h2>
         <p>Changes take effect only when you apply them.</p>
       </div>
     </div>
-    <div class="form-body">
+    <div class="settings__body">
       @for (field of fields; track field.key) {
-      <div class="form-field">
-        <label [for]="field.key">{{ field.label }}</label>
-        <p [id]="field.key + '-hint'">{{ field.description }}</p>
-        <div class="input-wrap">
-          <input
-            type="number"
-            [id]="field.key"
-            [formControlName]="field.key"
-            [min]="field.min"
-            [max]="field.max"
-            step="1"
-            [attr.aria-invalid]="showError(field.key)"
-            [attr.aria-describedby]="
+        <div class="settings-field">
+          <label [for]="field.key">{{ field.label }}</label>
+          <p [id]="field.key + '-hint'">{{ field.description }}</p>
+
+          <div class="settings-field__input">
+            <input
+              type="number"
+              [id]="field.key"
+              [formControlName]="field.key"
+              [min]="field.min"
+              [max]="field.max"
+              step="1"
+              [attr.aria-invalid]="showError(field.key)"
+              [attr.aria-describedby]="
                 field.key + '-hint ' + field.key + '-error'
-              "
-          /><span>{{ field.unit }}</span>
+              " />
+            <span>{{ field.unit }}</span>
+          </div>
+
+          <div class="settings-field__meta">
+            <span>Allowed range: {{ field.min }}-{{ integer(field.max) }}</span>
+            <span>Whole numbers only</span>
+          </div>
+
+          <p class="settings-field__error" [id]="field.key + '-error'">
+            @if (showError(field.key)) {
+              Enter a whole number from {{ field.min }} to
+              {{ integer(field.max) }}.
+            }
+          </p>
         </div>
-        <div class="field-meta">
-          <span>Allowed range: {{ field.min }}–{{ integer(field.max) }}</span
-          ><span>Whole numbers only</span>
-        </div>
-        <p class="field-error" [id]="field.key + '-error'">
-          @if (showError(field.key)) { Enter a whole number from {{ field.min }}
-          to {{ integer(field.max) }}. }
-        </p>
-      </div>
       }
-      <div class="reset-notice">
+
+      <div class="settings-notice">
         <span aria-hidden="true">↻</span>
         <p>
-          <strong>Apply starts a new run.</strong> Accumulated metrics and
-          generator state will reset. Generation starts automatically, including
-          after a paused run.
+          <strong>Apply starts a new run.</strong>
+          Accumulated metrics and generator state will reset. Generation starts
+          automatically, including after a paused run.
         </p>
       </div>
     </div>
-    <div class="form-footer">
+
+    <div class="settings__footer">
       <span
-        class="apply-feedback"
-        [class.field-error]="!!engine.error()"
-        role="status"
-        >{{ engine.error() ?? feedback }}</span
-      ><button class="button primary" type="submit" [disabled]="form.invalid">
-        Apply settings <span aria-hidden="true">↗</span>
+        class="settings__feedback"
+        [class.settings-field__error]="!!engine.error()"
+        role="status">
+        {{ engine.error() ?? feedback }}
+      </span>
+      <button
+        class="button button--primary"
+        type="submit"
+        [disabled]="form.invalid">
+        Apply settings
+        <span aria-hidden="true">↗</span>
       </button>
     </div>
   </form>
-  <aside class="settings-aside">
-    <div class="aside-label">
-      <span class="tiny-dot lime"></span> ACTIVE CONFIGURATION
-    </div>
-    <h2>Run {{ engine.runId().toString().padStart(3, "0") }}</h2>
-    <p>The current producer continues while you edit.</p>
-    <dl>
-      <div>
-        <dt>Status</dt>
-        <dd>{{ engine.status() }}</dd>
-      </div>
-      <div>
-        <dt>Instruments</dt>
-        <dd>{{ engine.settings().instrumentCount }}</dd>
-      </div>
-      <div>
-        <dt>Updates / batch</dt>
-        <dd>{{ engine.settings().updatesPerBatch }}</dd>
-      </div>
-      <div>
-        <dt>Batch interval</dt>
-        <dd>{{ engine.settings().batchIntervalMs }} ms</dd>
-      </div>
-    </dl>
-    <div class="aside-footnote">
-      Settings are kept for this session only and return to defaults on reload.
-    </div>
-  </aside>
+
+  <app-active-configuration
+    [settings]="engine.settings()"
+    [status]="engine.status()"
+    [runId]="engine.runId()" />
 </div>

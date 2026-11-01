@@ -1,14 +1,14 @@
-//! Назначение файла: настоящий детерминированный симулятор рынка для native-тестов и WebAssembly.
-//! Rust владеет случайной последовательностью, ценами инструментов и генерацией всех полей сделки.
-//! JavaScript получает готовые порции; экспортированные объекты освобождаются через wasm-bindgen free().
+//! Deterministic market simulator shared by native tests and WebAssembly.
+//! Rust owns the random sequence, instrument prices, and all generated trade fields.
+//! JavaScript receives batches and releases exported objects through wasm-bindgen free().
 
 use wasm_bindgen::prelude::*;
 
 const MAX_PRICE: u32 = 1_000_000;
 const WIDTH: usize = 7;
 
-/// Псевдослучайный xorshift32 с seed: ноль заменяем, иначе последовательность застрянет в нулях.
-/// Алгоритм нужен для воспроизводимой симуляции, а не криптографии или торговых прогнозов.
+/// Seeded xorshift32: replace zero to prevent a sequence of zeros.
+/// Intended for reproducible simulation, not cryptography or trading predictions.
 #[wasm_bindgen]
 pub struct MarketGenerator {
     random: u32,
@@ -28,8 +28,8 @@ impl MarketGenerator {
         })
     }
 
-    /// Создаёт ровно count обновлений. wasm-bindgen копирует Vec в отдельный Uint32Array.
-    /// Массивом владеет JS; сам генератор нужно явно освободить при замене или завершении.
+    /// Creates exactly count updates. wasm-bindgen copies the Vec into a separate Uint32Array.
+    /// JS owns the array; explicitly free the generator when replacing or disposing it.
     #[wasm_bindgen(js_name = generateBatch)]
     pub fn generate_batch(&mut self, count: u32) -> Result<Vec<u32>, String> {
         if !(1..=1000).contains(&count) {
@@ -39,18 +39,18 @@ impl MarketGenerator {
         for _ in 0..count {
             let index = self.next() as usize % self.prices.len();
             let step = (self.next() % 41) as i32 - 20;
-            // Ограниченный шаг от предыдущей цены: у каждого инструмента своя сохраняемая середина котировки.
+            // Bound each price step; every instrument retains its own midpoint.
             let midpoint = (self.prices[index] as i32 + step).clamp(10, MAX_PRICE as i32) as u32;
             self.prices[index] = midpoint;
             let half_spread = 1 + self.next() % 5;
-            // Нижняя граница midpoint равна 10, half_spread не больше 5: bid всегда положителен.
+            // The midpoint is at least 10 and half_spread at most 5, so bid stays positive.
             let bid = midpoint - half_spread;
             let ask = midpoint + half_spread;
             let price = if self.next() & 1 == 0 { bid } else { ask };
             let quantity = 1 + self.next() % 100;
             let bid_quantity = self.next() % 1001;
             let ask_quantity = self.next() % 1001;
-            // ABI: порядок полей закреплён в market-data.ts и e2e/wasm-contract.spec.ts.
+            // ABI field order is defined in market-data.ts and locked by e2e/wasm-contract.spec.ts.
             batch.extend_from_slice(&[
                 index as u32,
                 price,
@@ -76,7 +76,7 @@ impl MarketGenerator {
     }
 }
 
-// Native-тесты проверяют модель без браузера; реальную связку JS/Wasm проверяет отдельный smoke.
+// Native tests cover the model; a separate smoke test verifies the actual JS/Wasm integration.
 #[cfg(test)]
 mod tests {
     use super::*;

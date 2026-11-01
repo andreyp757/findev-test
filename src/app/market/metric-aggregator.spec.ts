@@ -1,7 +1,3 @@
-/**
- * Назначение файла: Проверяет финансовые формулы, пустые данные, разделение инструментов и точность больших сумм.
- * Заданные вручную ожидаемые значения позволяют поймать ошибку, даже если интерфейс выглядит правильно.
- */
 import { describe, expect, it } from "vitest";
 import { MetricAggregator } from "./metric-aggregator";
 import { imbalance, usd, usdRatio } from "./market-format";
@@ -64,8 +60,8 @@ describe("cumulative market metrics", () => {
     const thousand = new Uint32Array(
       Array.from({ length: 1000 }, () => row).flat(),
     );
-    // Для выхода объёма за безопасную границу number нужны 2 097 153 сделки с максимальным u32.
-    // Повторно используем небольшую порцию, не храня всю тестовую историю.
+    // Exceeding number's safe volume limit requires 2,097,153 trades with maximum u32 quantities.
+    // Reuse a small batch instead of retaining the full test history.
     for (let i = 0; i < 2097; i++) a.process(thousand);
     a.process(thousand.subarray(0, 153 * 7));
     const expected = 2_097_153n * 4_294_967_295n;

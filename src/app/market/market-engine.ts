@@ -1,7 +1,3 @@
-/**
- * Назначение файла: Фасад движка на основном потоке: владеет Worker и состоянием интерфейса в Signals.
- * Корневая область DI сохраняет запуск при навигации; runId и проверка экземпляра отсекают старые ответы.
- */
 import {
   DestroyRef,
   Injectable,
@@ -61,7 +57,7 @@ export class MarketEngine {
   private worker: WorkerPort | null = null;
   private destroyed = false;
   private startupTimer: ReturnType<typeof setTimeout> | null = null;
-  // Один объект состояния позволяет одновременно заменить строки, счётчики и статус.
+  // A single state object updates rows, counters, and status atomically.
   private readonly state = signal<EngineState>({
     settings: DEFAULT_SETTINGS,
     runId: 0,
@@ -84,7 +80,7 @@ export class MarketEngine {
     this.apply(DEFAULT_SETTINGS);
   }
 
-  /** true означает принятую команду; реальную готовность позже подтверждает статус Worker. */
+  /** true means the command was accepted; a later Worker status confirms readiness. */
   apply(settings: ProducerSettings): boolean {
     if (this.destroyed || !validSettings(settings)) return false;
     const runId = this.runId() + 1;
@@ -98,8 +94,8 @@ export class MarketEngine {
       batches: 0,
       error: null,
     });
-    // Ограничиваем ожидание и Worker-скрипта, и Wasm. По тайм-ауту завершаем всю среду,
-    // чтобы зависшая загрузка не оставалась жить отдельно от состояния Error.
+    // Bound startup time for both the Worker script and Wasm; terminate on timeout
+    // so a stalled load cannot outlive the Error state.
     this.startupTimer = setTimeout(() => {
       if (this.destroyed || runId !== this.runId()) return;
       this.startupTimer = null;
@@ -112,7 +108,7 @@ export class MarketEngine {
       if (!this.worker) {
         const worker = this.workerFactory();
         this.worker = worker;
-        // Старый обработчик не должен влиять на сервис после Retry с другим Worker.
+        // Ignore callbacks from an old Worker after Retry creates a replacement.
         worker.onmessage = (event) => {
           if (this.worker === worker) this.receive(event.data);
         };
@@ -160,7 +156,7 @@ export class MarketEngine {
   }
 
   private receive(event: WorkerEvent): void {
-    // Отбрасываем старый запуск до любых изменений, включая checkpoint из ERROR.
+    // Reject stale runs before any state change, including ERROR checkpoints.
     if (this.destroyed || event.runId !== this.runId()) return;
     switch (event.type) {
       case "STATUS":
@@ -219,11 +215,11 @@ export class MarketEngine {
     worker.onmessage = null;
     worker.onerror = null;
     worker.onmessageerror = null;
-    // DISPOSE — попытка аккуратного завершения; его обработку перед terminate не гарантируем.
+    // DISPOSE is best effort; it may not be processed before terminate.
     try {
       worker.postMessage({ type: "DISPOSE", runId: this.runId() });
     } catch {
-      /* Сломанный Worker может отвергнуть DISPOSE; terminate всё равно освобождает его среду. */
+      /* A broken Worker may reject DISPOSE; terminate still releases its environment. */
     } finally {
       worker.terminate();
     }

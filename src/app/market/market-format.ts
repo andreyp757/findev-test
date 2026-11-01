@@ -1,13 +1,9 @@
-/**
- * Назначение файла: Форматирует USD, дисбаланс, целые счётчики и дробную целевую скорость.
- * Округление выполняется только здесь; накопленные bigint-суммы не переводятся в неточный number.
- */
-// Один форматтер на модуль: повторная настройка локали на каждой ячейке заметно дороже.
+// Reuse one formatter per module to avoid locale setup for every cell.
 const integerFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
-// Скорость может быть дробной: целочисленный форматтер здесь теряет информацию.
+// Rates can be fractional; integer formatting would lose information.
 const rateFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
@@ -20,7 +16,7 @@ export function integer(value: number | bigint): string {
   return integerFormatter.format(value);
 }
 
-/** Округляем положительную дробь до ближайшего цента, половины вверх; bigint не превращаем в number. */
+/** Round a positive fraction to the nearest cent, half up, without converting bigint to number. */
 export function usdRatio(numeratorCents: bigint, denominator: bigint): string {
   if (denominator === 0n) return "N/A";
   const cents = (numeratorCents * 2n + denominator) / (2n * denominator);
@@ -34,6 +30,6 @@ export function usd(cents: number | null): string {
 export function imbalance(value: number | null): string {
   if (value === null) return "N/A";
   const formatted = value.toFixed(2);
-  // Нормализуем только представление, не меняя знак и точность самой метрики.
+  // Normalize display only, preserving the metric's sign and precision.
   return formatted === "-0.00" ? "0.00" : formatted;
 }

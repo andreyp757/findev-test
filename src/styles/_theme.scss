@@ -1,0 +1,26 @@
+:root {
+  color-scheme: light;
+  /* Keep text and focus indicators legible against pastel surfaces. */
+  --bg: #f5f4ef;
+  --panel: #fffdfa;
+  --surface-soft: #f0f2ed;
+  --line: #dce1d8;
+  --control-border: #8c9c91;
+  --text: #303d39;
+  --muted: #5d6963;
+  --accent: #476b5a;
+  --accent-soft: #e6eee5;
+  --accent-fill: #769784;
+  --blue: #526a79;
+  --blue-soft: #e7edf1;
+  --negative: #985644;
+  --negative-soft: #f7ece6;
+  --negative-border: #d6b8aa;
+  --negative-fill: #bb8b78;
+  --mono: "IBM Plex Mono", monospace;
+  --sans: "DM Sans", system-ui, sans-serif;
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  font-synthesis: none;
+}

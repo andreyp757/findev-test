@@ -1,0 +1,39 @@
+<aside class="active-configuration">
+  <div class="active-configuration__label">
+    <span class="dot dot--accent"></span>
+    ACTIVE CONFIGURATION
+  </div>
+  <h2 class="active-configuration__title">
+    Run {{ runId().toString().padStart(3, "0") }}
+  </h2>
+  <p class="active-configuration__description">
+    The current producer continues while you edit.
+  </p>
+  <dl class="active-configuration__details">
+    <div class="active-configuration__entry">
+      <dt class="active-configuration__term">Status</dt>
+      <dd class="active-configuration__value">{{ status() }}</dd>
+    </div>
+    <div class="active-configuration__entry">
+      <dt class="active-configuration__term">Instruments</dt>
+      <dd class="active-configuration__value">
+        {{ settings().instrumentCount }}
+      </dd>
+    </div>
+    <div class="active-configuration__entry">
+      <dt class="active-configuration__term">Updates / batch</dt>
+      <dd class="active-configuration__value">
+        {{ settings().updatesPerBatch }}
+      </dd>
+    </div>
+    <div class="active-configuration__entry">
+      <dt class="active-configuration__term">Batch interval</dt>
+      <dd class="active-configuration__value">
+        {{ settings().batchIntervalMs }} ms
+      </dd>
+    </div>
+  </dl>
+  <div class="active-configuration__footnote">
+    Settings are kept for this session only and return to defaults on reload.
+  </div>
+</aside>

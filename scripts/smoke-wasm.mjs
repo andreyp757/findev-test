@@ -1,7 +1,3 @@
-/**
- * Назначение файла: Загружает настоящий бинарник в Node, проверяет fingerprint и миллион сгенерированных сделок.
- * Это проверка связки JavaScript/Wasm; её время не является измерением отрисовки Angular.
- */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";

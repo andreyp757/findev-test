@@ -1,5 +1,5 @@
-// Назначение файла: Строгая проверка исходников, unit- и browser-тестов без выпуска JavaScript.
-// Worker исключён из DOM-окружения этого конфига и собирается отдельно.
+// Strictly typecheck sources, unit tests, and browser tests without emitting JavaScript.
+// Exclude the Worker from this DOM environment; compile it separately.
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {

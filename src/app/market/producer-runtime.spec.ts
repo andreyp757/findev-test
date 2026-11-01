@@ -1,7 +1,3 @@
-/**
- * Назначение файла: Проверяет таймеры, паузу, ACK, освобождение генераторов и асинхронные гонки без браузера.
- * Управляемые фабрики и искусственное время воспроизводят редкие порядки событий без реального ожидания.
- */
 import {
   afterEach,
   beforeEach,
@@ -351,7 +347,7 @@ describe("asynchronous Wasm initialization", () => {
 });
 
 describe("monotonic batch deadlines", () => {
-  // Управляем отдельно временем работы и временем доставки таймера: fake timers сами не моделируют длительность batch.
+  // Control work time and timer delivery separately: fake timers do not model batch duration.
   async function setup(workMs: number) {
     let now = 0;
     let task: { at: number; callback: () => void } | null = null;
@@ -453,7 +449,7 @@ describe("monotonic batch deadlines", () => {
 });
 
 it("requires error events to use the ERROR variant instead of STATUS", () => {
-  // Это проверяется tsc в дополнение к runtime-тестам: расширение STATUS до Error нарушит контракт.
+  // tsc checks this contract too: allowing Error in STATUS must fail compilation.
   expectTypeOf<
     Extract<WorkerEvent, { type: "STATUS" }>["status"]
   >().toEqualTypeOf<"Initializing" | "Running" | "Paused">();

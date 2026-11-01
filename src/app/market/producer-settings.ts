@@ -1,14 +1,10 @@
-/**
- * Назначение файла: Хранит значения по умолчанию, допустимые диапазоны и стабильные символы инструментов.
- * Общая проверка нужна сервису и Worker; форма использует те же ограничения для своих контролов.
- */
 export interface ProducerSettings {
   readonly instrumentCount: number;
   readonly updatesPerBatch: number;
   readonly batchIntervalMs: number;
 }
 
-// Защищаем общий шаблон от случайной записи; активный запуск получает отдельную копию.
+// Protect shared defaults from mutation; each active run gets its own copy.
 export const DEFAULT_SETTINGS: ProducerSettings = Object.freeze({
   instrumentCount: 5,
   updatesPerBatch: 100,
@@ -28,7 +24,7 @@ export function validSettings(value: ProducerSettings): boolean {
   });
 }
 
-// Стабильный символ служит ключом строки: новые снимки не требуют заново создавать весь DOM.
+// Use a stable symbol as the row key to reuse DOM nodes across snapshots.
 export function symbols(count: number): string[] {
   const first = ["ALFA", "BETA", "GAMMA", "DELTA", "EPSI"];
   return Array.from(

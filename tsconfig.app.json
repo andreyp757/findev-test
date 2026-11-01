@@ -1,5 +1,5 @@
-// Назначение файла: Настройки компиляции основного приложения и его точки входа.
-// Глобальные типы тестов сюда не включаются; Worker имеет отдельный конфиг.
+// Compile the main application and its entry point.
+// Exclude global test types; the Worker uses a separate configuration.
 {
   "extends": "./tsconfig.json",
   "compilerOptions": { "outDir": "./out-tsc/app", "types": [] },

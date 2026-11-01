@@ -1,15 +1,11 @@
 /**
- * Назначение файла: Описывает числовой формат обновления Rust и готовые метрики одной строки.
- * Единицы измерения общие для обоих потоков: цена в центах, накопленные объём и стоимость в bigint.
- */
-/**
- * ABI Rust → JS: плоский Uint32Array, ровно UPDATE_WIDTH значений на сделку.
- * Смещения считаются в элементах u32, не байтах. Частичных записей нет.
- * instrument — индекс [0, instrumentCount); цена/количество сделки > 0;
- * 0 < bidCents < askCents; priceCents совпадает с bidCents или askCents.
- * Цены — целые центы; количества — целые единицы, стакан допускает нули.
- * Накопитель принимает диапазон u32. Более узкие диапазоны симулятора проверяет контрактный тест.
- * Порядок полей согласован с batch.extend_from_slice в Rust и зафиксирован независимой fixture.
+ * Rust → JS ABI: a flat Uint32Array with exactly UPDATE_WIDTH values per trade.
+ * Offsets are in u32 elements, not bytes. Partial records are invalid.
+ * instrument is an index in [0, instrumentCount); trade price and quantity are > 0;
+ * 0 < bidCents < askCents; priceCents equals either bidCents or askCents.
+ * Prices are integer cents; quantities are integer units, with zero allowed in the order book.
+ * The aggregator accepts the u32 range. Contract tests verify the simulator's narrower ranges.
+ * Field order matches Rust's batch.extend_from_slice and is locked by an independent fixture.
  */
 export const UPDATE_OFFSET = {
   instrument: 0,
