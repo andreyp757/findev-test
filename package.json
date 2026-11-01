@@ -17,7 +17,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.test.json",
     "build": "npm run wasm:build && ng build",
     "build:pages": "npm run build -- --base-href /findev-test/",
-    "format": "prettier --write src scripts *.json *.ts README.md"
+    "preview": "node scripts/serve-production.mjs",
+    "test:e2e": "playwright test",
+    "format": "prettier --write src e2e scripts *.json *.ts .github README.md docs",
+    "test:performance": "npm run build:pages && node scripts/profile-production.mjs"
   },
   "dependencies": {
     "@angular/common": "22.2.3",
