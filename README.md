@@ -1,53 +1,65 @@
-# FinDev — real-time market dashboard
+# FinDev — Real-time market dashboard
 
-A two-page Angular dashboard backed by exact cumulative metrics and a seeded Rust/WebAssembly generator in a dedicated Worker. All instruments and trades are fictional.
+Angular dashboard with a stateful Rust/WebAssembly simulator running in a dedicated Web Worker. All instruments and trades are fictional.
 
-Requires Node 22.22.3+, npm, Rust 1.91.0 and wasm-pack 0.15.0.
+## Run locally
+
+Requires Node 22.22.3+ (see `.nvmrc`), npm, Rust/rustup and wasm-pack 0.15.0.
 
 ```sh
 npm ci
-npm run wasm:build
-npm run test:all
-npm run typecheck
-```
-
-Prices are integer cents. Volume and notional use bigint; VWAP rounds only for display. Book quantities never contribute to trade volume. The Rust generator persists instrument prices and produces seven u32 values per trade. Tests include the required two-trade VWAP example, large exact sums and generator invariants.
-
-## Worker lifecycle
-
-`market.worker.ts` initializes Wasm inside the Worker and connects typed messages to `ProducerRuntime`. `START_RUN` replaces the generator and resets cumulative metrics; `PAUSE` stops scheduling and preserves totals; `RESUME` waits a fresh interval without replaying missed batches. `DISPOSE` cancels pending work and frees the generator.
-
-Every complete valid batch is aggregated before publication. Ordinary snapshots are throttled to 150 ms and only one can await `ACK` at a time. Trades keep accumulating while a snapshot is pending. Pause queues final totals before confirming `Paused`. Runtime errors carry a checkpoint of successfully processed batches.
-
-Commands and snapshots carry `runId`; acknowledgement uses `sequence`. An internal epoch prevents late asynchronous initialization from replacing a newer generator. Injected scheduling and generator dependencies make these lifecycle cases deterministic in tests. The real Worker uses the compiled Rust module, not the test generator.
-
-To type-check the Worker independently after building Wasm:
-
-```sh
-npx tsc --noEmit -p tsconfig.worker.json
-```
-
-## Run the dashboard
-
-After installing dependencies and the tools listed above:
-
-```sh
+rustup toolchain install 1.91.0 --profile minimal --target wasm32-unknown-unknown
+cargo install wasm-pack --version 0.15.0 --locked
 npm start -- --port 4300
 ```
 
-Open http://127.0.0.1:4300/. On macOS, `./start-local.command --port 4300` checks the toolchain, installs npm dependencies when needed, builds Wasm and starts Angular. Stop with Ctrl+C.
+Open http://127.0.0.1:4300/. On macOS you can also use `./start-local.command --port 4300`; it checks tools and installs dependencies when needed. Stop with Ctrl+C.
 
-Dashboard is at `#/`; Settings is at `#/settings`. Both pages use the same root-scoped `MarketEngine`. Angular Signals expose state, OnPush components render snapshots, and stable symbol keys preserve table rows. Generation continues across route changes. Settings are a validated local draft until Apply, which resets the run and starts generation even after a pause or an error. Settings are not persisted across reloads.
+## Architecture
 
-The main-thread service rejects stale run IDs and callbacks from replaced Workers, acknowledges snapshots and limits startup to 15 seconds. Errors stop the producer and offer retry. The interface uses a light pastel palette, accessible labels, keyboard focus indicators and responsive layouts; the wide data table scrolls within its own container on small screens.
+`Settings draft → MarketEngine → START_RUN / PAUSE / RESUME → Worker → Rust/Wasm → MetricAggregator → SNAPSHOT → MarketEngine Signals → Dashboard`
 
-## Production build
+Angular 22 uses standalone components, Signals, Reactive Forms, OnPush and hash routing. `MarketEngine` is root-scoped, so both pages share one producer. Settings are a draft until Apply. Apply creates a new run, clears totals and starts generation, including after pause or error.
+
+Rust owns seeded randomness, persistent per-instrument prices and all seven fields of each trade. wasm-bindgen returns a copied `Uint32Array`; JavaScript owns the array and the runtime explicitly frees replaced generators. Wasm initializes inside the Worker. The build fingerprints the binary and bundles its matching filename with the Worker, so a stale binary cannot be paired with new glue.
+
+`ProducerRuntime` owns one recursive timer and cumulative metrics. Normal snapshots are throttled to 150 ms, with at most one unacknowledged snapshot. Every valid batch is aggregated before publication; slower rendering never skips trades. Pause cancels generation and confirms only after final totals have been queued. Resume preserves state and waits a full interval without generating catch-up trades. `runId`, an initialization epoch and Worker-instance checks reject stale work. Startup has a 15-second timeout. Reported runtime errors include the last exact checkpoint; an abrupt crash can preserve only the last delivered snapshot.
+
+## Metrics
+
+| Metric    | Definition                                                           |
+| --------- | -------------------------------------------------------------------- |
+| Last      | Most recent trade price                                              |
+| Spread    | Latest ask minus bid                                                 |
+| Volume    | Sum of trade quantities since Apply                                  |
+| VWAP      | Sum of price × trade quantity divided by volume                      |
+| Imbalance | Latest (bid quantity − ask quantity) / (bid quantity + ask quantity) |
+
+Prices stay in integer cents. Volume and notional use `bigint`, including transport between threads. VWAP rounds only when displayed. Book quantities do not contribute to trading volume. Unavailable values and zero denominators display `N/A`; initial volume is zero. Two trades, 10 at $100 and 30 at $102, yield volume 40 and VWAP $101.50.
+
+## Verification
 
 ```sh
-npm run build
+npm run wasm:build
+npm run test:all
+npm run typecheck
 npm run build:pages
+npx playwright install chromium
+npm run test:e2e
 ```
 
-The first command targets `/`; the second targets `/findev-test/`. Both automatically compile Wasm, generate its content-fingerprinted asset name and build the Worker. The static application is written to `dist/terminal/browser`.
+Unit tests cover formulas, exact large sums, settings and deterministic lifecycle races. Native Rust tests cover seeded generation and invariants. Wasm smoke tests process one million trades. Browser tests exercise the real Worker, routes, pause, Apply, load failures, mobile layout, contrast and independent replay at maximum settings. ABI tests load the actual Wasm binary.
 
-Unit tests currently cover metrics, formatting, settings, Worker lifecycle and the Angular state owner. Browser integration tests, the production preview server and automatic public deployment are the next delivery stage. No live deployment is claimed yet.
+Optional sustained measurement: `npm run test:performance`. It builds production and measures roughly five minutes of maximum load plus pause, routing and reset scenarios. Results remain under ignored `performance-results/`; heap, renderer RSS and frame gaps are different measurements and must not be added together. Reported results depend on the machine. No universal throughput or memory guarantee is claimed.
+
+## Build and hosting
+
+`npm run build` builds at `/`. `npm run build:pages` builds for `/findev-test/`. `npm run preview` serves that build at http://127.0.0.1:4173/findev-test/.
+
+GitHub Actions runs Rust, TypeScript, Wasm and browser checks before publishing. Pages must use GitHub Actions as its source and repository variable `ENABLE_PAGES=true`. The intended public URL is https://andreyp757.github.io/findev-test/; deployment is only complete when the workflow succeeds and the live app is verified. Hash routing preserves both pages on static hosting. Only `dist/terminal/browser` is published; local documentation is excluded from Git and from the build.
+
+## Design decisions and limitations
+
+The code groups market contracts, runtime and tests together in `src/app/market`, with separate `dashboard` and `settings` components. No backend, state-management framework or component library is needed for two pages. There is no event history: retained records scale with at most 50 instruments, while integer totals grow in precision over time. The simulator is deterministic, not a realistic exchange or a cryptographic random source. Background tabs may throttle timers. Browser automation targets Chromium. Fonts have system fallbacks. Settings reset on reload.
+
+Angular 22 is used instead of the original Angular 19 baseline; Node, Rust and dependency versions are pinned for reproducibility. Generated `public/wasm` and `wasm/market-producer/pkg` are rebuilt automatically and are not committed.
