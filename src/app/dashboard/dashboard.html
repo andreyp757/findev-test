@@ -1,0 +1,185 @@
+<!-- Назначение: разметка экрана dashboard; логика находится в соседнем TypeScript-файле. -->
+<div class="page-kicker">
+  <span class="eyebrow">WORKSPACE</span><span class="slash">/</span> Market
+  overview
+</div>
+<section class="page-heading">
+  <div>
+    <div class="heading-line">
+      <h1>Market overview</h1>
+      <span class="badge">Simulation</span>
+    </div>
+    <p>Your market, at a glance. Every trade accounted for.</p>
+  </div>
+  <div class="heading-actions">
+    <span
+      class="status"
+      [class.running]="engine.status() === 'Running'"
+      [class.error]="engine.status() === 'Error'"
+      role="status"
+      ><span class="status-dot"></span>{{ engine.status() }}</span
+    >
+    <button
+      class="button secondary"
+      (click)="toggle()"
+      [disabled]="
+        engine.status() === 'Initializing' || engine.status() === 'Error'
+      "
+    >
+      <span aria-hidden="true"
+        >{{ engine.status() === "Paused" ? "▷" : "Ⅱ" }}</span
+      >
+      {{ engine.status() === "Paused" ? "Resume" : "Pause" }}
+    </button>
+  </div>
+</section>
+@if (engine.error()) {
+<div class="error-banner" role="alert">
+  <strong>Market engine unavailable</strong>
+  <p>{{ engine.error() }}</p>
+  <button class="button secondary" (click)="engine.apply(engine.settings())">
+    Retry with current settings
+  </button>
+</div>
+}
+<section class="stats-grid" aria-label="Run summary">
+  <article class="stat">
+    <div class="stat-label">ACTIVE INSTRUMENTS</div>
+    <div class="stat-value">
+      {{ engine.settings().instrumentCount }}<span class="stat-unit">
+        / 50</span
+      >
+    </div>
+    <div class="stat-note">
+      <span class="tiny-dot lime"></span> Unique market symbols
+    </div>
+  </article>
+  <article class="stat">
+    <div class="stat-label">TRADES PROCESSED</div>
+    <div class="stat-value">{{ integer(engine.trades()) }}</div>
+    <div class="stat-note">
+      Across {{ integer(engine.batches()) }} generated batches
+    </div>
+  </article>
+  <article class="stat">
+    <div class="stat-label">TARGET THROUGHPUT</div>
+    <div class="stat-value">
+      {{ throughput(rate()) }}<span class="stat-unit"> trades / s</span>
+    </div>
+    <div class="stat-note">
+      {{ engine.settings().updatesPerBatch }} updates every {{
+      engine.settings().batchIntervalMs }} ms
+    </div>
+  </article>
+  <article class="stat">
+    <div class="stat-label">COMPUTE ENGINE</div>
+    <div class="stat-value engine-name">
+      Rust<span class="plus">+</span>Wasm
+    </div>
+    <div class="stat-note">
+      <span class="tiny-dot lime"></span> Dedicated Web Worker
+    </div>
+  </article>
+</section>
+<section class="market-panel" aria-labelledby="instruments-heading">
+  <div class="panel-heading">
+    <div>
+      <h2 id="instruments-heading">
+        Instruments
+        <span class="count-chip">{{ engine.rows().length }}</span>
+      </h2>
+      <p>Cumulative metrics for the current run</p>
+    </div>
+    <span class="run-label"
+      ><span class="tiny-dot"></span> RUN {{
+      engine.runId().toString().padStart(3, "0") }}
+      <span class="vertical-separator">|</span> USD</span
+    >
+  </div>
+  <div class="table-scroll">
+    <table>
+      <caption class="sr-only">
+        Live fictional instrument prices and cumulative trade metrics in USD
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">SYMBOL</th>
+          <th scope="col">LAST PRICE</th>
+          <th scope="col">BID–ASK SPREAD</th>
+          <th scope="col">TRADING VOLUME</th>
+          <th scope="col">
+            <abbr title="Volume-weighted average price">VWAP</abbr>
+          </th>
+          <th scope="col">BOOK IMBALANCE</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of engine.rows(); track row.symbol; let i = $index) {
+        <tr>
+          <th scope="row">
+            <span class="symbol-cell"
+              ><span class="instrument-icon" [class.alt]="i % 2 === 1"
+                >{{ row.symbol.slice(0, 1) }}</span
+              ><span
+                >{{ row.symbol }}<small>SIMULATED EQUITY</small></span
+              ></span
+            >
+          </th>
+          <td class="price">{{ usd(row.lastPriceCents) }}</td>
+          <td class="muted-number">{{ usd(row.spreadCents) }}</td>
+          <td>
+            {{ integer(row.volume) }}<span class="quantity-unit"> sh</span>
+          </td>
+          <td>{{ usdRatio(row.notionalCents, row.volume) }}</td>
+          <td>
+            <div class="imbalance-cell">
+              <span
+                [class.positive]="(row.imbalance ?? 0) > 0"
+                [class.negative]="(row.imbalance ?? 0) < 0"
+                >{{ imbalance(row.imbalance) }}</span
+              ><span class="imbalance-track" aria-hidden="true"
+                ><span class="imbalance-center"></span
+                ><span
+                  class="imbalance-fill"
+                  [class.sell]="(row.imbalance ?? 0) < 0"
+                  [style.left.%]="
+                      (row.imbalance ?? 0) < 0
+                        ? 50 + (row.imbalance ?? 0) * 50
+                        : 50
+                    "
+                  [style.width.%]="abs(row.imbalance ?? 0) * 50"
+                ></span
+              ></span>
+            </div>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="table-footer">
+    <span
+      ><span class="tiny-dot lime"></span> {{ engine.status() === "Paused" ?
+      "Feed paused · totals preserved" : engine.status() === "Running" ? "Feed
+      active · all trades aggregated" : engine.status() === "Error" ? "Feed
+      stopped · see error above" : "Loading WebAssembly engine…" }}</span
+    ><span
+      >{{ engine.rows().length }} instruments
+      <span class="vertical-separator">·</span> Snapshots ≤ 7 / s</span
+    >
+  </div>
+</section>
+<aside class="info-note">
+  <span class="info-icon" aria-hidden="true">i</span>
+  <p>
+    <strong>Precision behind every price.</strong> Volume and VWAP accumulate
+    from the start of this run. Apply new settings to begin a fresh session.
+  </p>
+  <a routerLink="/settings"
+    >Configure producer <span aria-hidden="true">↗</span></a
+  >
+</aside>
+<div class="bottom-caption">
+  <span>MARKET DATA IS SIMULATED FOR DEMONSTRATION PURPOSES</span
+  ><span>INTEGER CENTS · EXACT TOTALS</span>
+</div>

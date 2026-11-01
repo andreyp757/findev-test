@@ -1,6 +1,6 @@
-# FinDev — market core and Worker runtime
+# FinDev — real-time market dashboard
 
-The dashboard migration now includes exact cumulative metrics, validated settings, a seeded Rust/WebAssembly generator and its dedicated Worker runtime. The Angular interface follows in the next stage.
+A two-page Angular dashboard backed by exact cumulative metrics and a seeded Rust/WebAssembly generator in a dedicated Worker. All instruments and trades are fictional.
 
 Requires Node 22.22.3+, npm, Rust 1.91.0 and wasm-pack 0.15.0.
 
@@ -21,8 +21,33 @@ Every complete valid batch is aggregated before publication. Ordinary snapshots 
 
 Commands and snapshots carry `runId`; acknowledgement uses `sequence`. An internal epoch prevents late asynchronous initialization from replacing a newer generator. Injected scheduling and generator dependencies make these lifecycle cases deterministic in tests. The real Worker uses the compiled Rust module, not the test generator.
 
-The Angular main-thread owner and public deployment are not included in this stage. To type-check the Worker independently after building Wasm:
+To type-check the Worker independently after building Wasm:
 
 ```sh
 npx tsc --noEmit -p tsconfig.worker.json
 ```
+
+## Run the dashboard
+
+After installing dependencies and the tools listed above:
+
+```sh
+npm start -- --port 4300
+```
+
+Open http://127.0.0.1:4300/. On macOS, `./start-local.command --port 4300` checks the toolchain, installs npm dependencies when needed, builds Wasm and starts Angular. Stop with Ctrl+C.
+
+Dashboard is at `#/`; Settings is at `#/settings`. Both pages use the same root-scoped `MarketEngine`. Angular Signals expose state, OnPush components render snapshots, and stable symbol keys preserve table rows. Generation continues across route changes. Settings are a validated local draft until Apply, which resets the run and starts generation even after a pause or an error. Settings are not persisted across reloads.
+
+The main-thread service rejects stale run IDs and callbacks from replaced Workers, acknowledges snapshots and limits startup to 15 seconds. Errors stop the producer and offer retry. The interface uses a light pastel palette, accessible labels, keyboard focus indicators and responsive layouts; the wide data table scrolls within its own container on small screens.
+
+## Production build
+
+```sh
+npm run build
+npm run build:pages
+```
+
+The first command targets `/`; the second targets `/findev-test/`. Both automatically compile Wasm, generate its content-fingerprinted asset name and build the Worker. The static application is written to `dist/terminal/browser`.
+
+Unit tests currently cover metrics, formatting, settings, Worker lifecycle and the Angular state owner. Browser integration tests, the production preview server and automatic public deployment are the next delivery stage. No live deployment is claimed yet.

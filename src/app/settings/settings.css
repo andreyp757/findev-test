@@ -1,0 +1,221 @@
+/* Стили settings ограничены компонентом; общая тема и повторно используемые элементы находятся в styles.css. */
+.primary {
+  background: var(--accent-soft);
+  border-color: var(--control-border);
+  color: var(--text);
+}
+
+.text-link {
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 680px) minmax(240px, 1fr);
+  gap: 28px;
+  align-items: start;
+  margin-bottom: 60px;
+}
+
+.settings-panel .panel-heading {
+  padding: 25px 30px;
+}
+
+.settings-glyph {
+  font-size: 23px;
+  color: var(--muted);
+}
+
+.form-body {
+  padding: 28px 30px 24px;
+}
+
+.form-field {
+  margin-bottom: 22px;
+}
+
+.form-field label {
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.form-field > p:not(.field-error) {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 8px 0 14px;
+}
+
+.input-wrap {
+  display: flex;
+  border: 1px solid var(--control-border);
+  border-radius: 6px;
+  align-items: center;
+  background: var(--panel);
+}
+
+.input-wrap:focus-within {
+  border-color: var(--accent);
+}
+
+.input-wrap input {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  padding: 13px 14px;
+  color: var(--text);
+  font: 14px var(--mono);
+  min-width: 0;
+}
+
+.input-wrap input:focus {
+  outline: none;
+}
+
+.input-wrap span {
+  padding: 0 14px;
+  color: var(--muted);
+  font: 11px var(--mono);
+}
+
+.field-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 9px;
+}
+
+.field-error {
+  font-size: 11px;
+  color: var(--negative);
+  min-height: 14px;
+  margin: 7px 0 0;
+}
+
+.reset-notice {
+  background: var(--accent-soft);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: flex;
+  gap: 12px;
+  padding: 15px;
+}
+
+.reset-notice > span {
+  font-size: 21px;
+  color: var(--accent);
+}
+
+.reset-notice p {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.8;
+}
+
+.reset-notice strong {
+  display: block;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.form-footer {
+  border-top: 1px solid var(--line);
+  padding: 19px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.apply-feedback {
+  font-size: 11px;
+  color: var(--accent);
+}
+
+.settings-aside {
+  padding: 26px;
+  border: 1px solid var(--line);
+  background: var(--accent-soft);
+  border-radius: 8px;
+}
+
+.aside-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 11px var(--mono);
+  letter-spacing: 1px;
+  color: var(--muted);
+}
+
+.settings-aside h2 {
+  font: 24px var(--mono);
+  margin: 23px 0 12px;
+}
+
+.settings-aside > p {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+dl {
+  margin: 24px 0;
+}
+
+dl > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+}
+
+dt {
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+  font-family: var(--mono);
+  color: var(--text);
+}
+
+.aside-footnote {
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+
+@media (max-width: 1100px) {
+  .settings-layout {
+    grid-template-columns: minmax(0, 1.8fr) minmax(230px, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .form-body {
+    padding: 24px 20px;
+  }
+  .settings-panel .panel-heading {
+    padding: 22px 20px;
+  }
+  .form-footer {
+    padding: 18px 20px;
+  }
+  .settings-aside {
+    padding: 22px;
+  }
+  .field-meta {
+    font-size: 11px;
+  }
+  .settings-layout {
+    margin-bottom: 35px;
+  }
+}

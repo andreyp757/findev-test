@@ -8,12 +8,16 @@
   },
   "scripts": {
     "wasm:build": "node scripts/build-wasm.mjs",
+    "start": "npm run wasm:build && ng serve --host 127.0.0.1",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:rust": "cargo test --manifest-path wasm/market-producer/Cargo.toml --locked",
     "test:all": "npm run test:rust && npm test && npm run test:wasm",
     "test:wasm": "node scripts/smoke-wasm.mjs",
-    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "build": "npm run wasm:build && ng build",
+    "build:pages": "npm run build -- --base-href /findev-test/",
+    "format": "prettier --write src scripts *.json *.ts README.md"
   },
   "dependencies": {
     "@angular/common": "22.2.3",
