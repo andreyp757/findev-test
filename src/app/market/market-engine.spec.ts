@@ -13,10 +13,12 @@ describe("application state and settings form", () => {
   let engine: MarketEngine;
   let injector: ReturnType<typeof Injector.create>;
   let commands: WorkerCommand[];
+  let injectorDestroyed = false;
   const emit = (event: WorkerEvent) =>
     port.onmessage?.({ data: event } as MessageEvent<WorkerEvent>);
   beforeEach(() => {
     vi.useFakeTimers();
+    injectorDestroyed = false;
     commands = [];
     port = {
       onmessage: null,
@@ -34,7 +36,7 @@ describe("application state and settings form", () => {
     engine = injector.get(MarketEngine);
   });
   afterEach(() => {
-    injector.destroy();
+    if (!injectorDestroyed) injector.destroy();
     vi.useRealTimers();
   });
   it("starts with defaults and no data", () => {
@@ -244,5 +246,54 @@ describe("application state and settings form", () => {
     emit({ type: "STATUS", runId: 1, status: "Running" });
     expect(engine.status()).toBe("Initializing");
     expect(engine.apply(DEFAULT_SETTINGS)).toBe(false);
+  });
+  it("injector destruction detaches every handler and cancels pending startup", () => {
+    const message = port.onmessage;
+    const error = port.onerror;
+    const messageError = port.onmessageerror;
+    injector.destroy();
+    injectorDestroyed = true;
+    expect(port.onmessage).toBeNull();
+    expect(port.onerror).toBeNull();
+    expect(port.onmessageerror).toBeNull();
+    expect(port.terminate).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+    message?.({
+      data: { type: "STATUS", runId: 1, status: "Running" },
+    } as MessageEvent<WorkerEvent>);
+    error?.({ message: "late error" } as ErrorEvent);
+    messageError?.({} as MessageEvent);
+    expect(engine.error()).toBeNull();
+    expect(engine.apply(DEFAULT_SETTINGS)).toBe(false);
+  });
+
+  it("message decoding failure releases handlers, timer, and Worker", () => {
+    port.onmessageerror?.({} as MessageEvent);
+    expect(engine.status()).toBe("Error");
+    expect(port.onmessage).toBeNull();
+    expect(port.onerror).toBeNull();
+    expect(port.onmessageerror).toBeNull();
+    expect(port.terminate).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("failed snapshot ACK terminates the Worker instead of leaving it producing", () => {
+    emit({ type: "STATUS", runId: 1, status: "Running" });
+    vi.mocked(port.postMessage).mockImplementation(() => {
+      throw new Error("ACK unavailable");
+    });
+    emit({
+      type: "SNAPSHOT",
+      runId: 1,
+      sequence: 1,
+      rows: engine.rows(),
+      trades: 10n,
+      batches: 1,
+    });
+    expect(engine.trades()).toBe(10n);
+    expect(engine.status()).toBe("Error");
+    expect(port.terminate).toHaveBeenCalledOnce();
+    expect(port.onmessage).toBeNull();
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

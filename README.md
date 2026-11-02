@@ -52,7 +52,9 @@ npm run test:e2e
 
 Unit tests cover formulas, exact large sums, settings and deterministic lifecycle races. Native Rust tests cover seeded generation and invariants. Wasm smoke tests process one million trades. Browser tests exercise the real Worker, routes, pause, Apply, load failures, mobile layout, contrast and independent replay at maximum settings. ABI tests load the actual Wasm binary.
 
-Optional sustained measurement: `npm run test:performance`. It builds production and measures roughly five minutes of maximum load plus pause, routing and reset scenarios. Results remain under ignored `performance-results/`; heap, renderer RSS and frame gaps are different measurements and must not be added together. Reported results depend on the machine. No universal throughput or memory guarantee is claimed.
+Optional sustained measurement: `npm run test:performance`. It builds production and measures roughly five minutes of maximum load plus pause, routing and reset scenarios. Results remain under ignored `performance-results/`; heap, renderer RSS and frame gaps are different measurements and must not be added together. The profiler warms up the UI, forces GC at comparable rendered checkpoints, and checks retained JS heap, DOM nodes, event listeners, Wasm memory, one live Worker during Apply, and zero Workers after closing the context. Lifecycle checks cover 50 pause/resume cycles, 100 route changes, and 1000 resets alternating small and maximum settings. Browser regression tests also cover 100 Apply commands during delayed Wasm loading, repeated load failures, and Worker crashes followed by Retry.
+
+For a shorter diagnostic run against an existing production build: `PERF_DURATION_MS=30000 node scripts/profile-production.mjs`. This shortens the load phases but retains all lifecycle checks. Reported results depend on the machine. Budgets detect regressions; passing a finite Chromium run is not proof against every possible leak or browser-specific issue.
 
 ## Build and hosting
 

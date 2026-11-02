@@ -48,7 +48,14 @@ const result = {
     "Heap checks use explicit GC at checkpoints; periodic samples do not force GC.",
     "RSS includes JS/Wasm/native structures; do not add these metrics together.",
   ],
-  budgets: { durationMs, heapGrowthLimit, frameGapLimit },
+  budgets: {
+    durationMs,
+    heapGrowthLimit,
+    frameGapLimit,
+    lifecycleHeapGrowthBytes: 1048576,
+    lifecycleDomNodeGrowth: 20,
+    lifecycleEventListenerGrowth: 5,
+  },
 };
 const log = (message, data) =>
   console.log(
@@ -100,7 +107,7 @@ try {
   function nestedSession(sessionId) {
     let next = 0;
     const pending = new Map();
-    root.on("Target.receivedMessageFromTarget", (e) => {
+    const onMessage = (e) => {
       if (e.sessionId !== sessionId) return;
       const m = JSON.parse(e.message);
       const p = pending.get(m.id);
@@ -110,8 +117,17 @@ try {
       m.error
         ? p.reject(new Error(JSON.stringify(m.error)))
         : p.resolve(m.result);
-    });
+    };
+    root.on("Target.receivedMessageFromTarget", onMessage);
     return {
+      dispose: () => {
+        root.off("Target.receivedMessageFromTarget", onMessage);
+        for (const request of pending.values()) {
+          clearTimeout(request.timer);
+          request.reject(new Error("Worker CDP session disposed"));
+        }
+        pending.clear();
+      },
       send: (method, params = {}) =>
         new Promise((resolve, reject) => {
           const id = ++next;
@@ -192,6 +208,15 @@ try {
   }
   async function sample(label, gc = false) {
     if (gc) {
+      // Let Angular finish routing and rendering before comparing retained DOM and heap.
+      await page.evaluate(
+        () =>
+          new Promise((resolve) => {
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => resolve(null)),
+            );
+          }),
+      );
       await main.send("HeapProfiler.collectGarbage");
       if (workerSession)
         await workerSession.send("HeapProfiler.collectGarbage");
@@ -250,7 +275,7 @@ try {
             p.runId = data.runId;
             p.status = data.status;
           }
-          if (data.type === "ERROR") {
+          if (data.type === "ERROR" && data.runId >= p.runId) {
             p.status = "Error";
           }
           if (data.type === "SNAPSHOT" && data.runId >= p.runId) {
@@ -259,6 +284,14 @@ try {
             p.snapshots++;
           }
         });
+      }
+      postMessage(command, ...args) {
+        if (command.type === "START_RUN") {
+          p.runId = command.runId;
+          p.status = "Initializing";
+          p.latest = null;
+        }
+        return super.postMessage(command, ...args);
       }
     };
     const tick = (now) => {
@@ -304,6 +337,41 @@ try {
     await page.getByRole("button", { name: "Resume", exact: true }).click();
     await ready();
     return performance.now() - t;
+  }
+  function assertRetainedMemory(before, after, label) {
+    const growth = {
+      label,
+      mainHeapBytes: after.mainHeap.usedSize - before.mainHeap.usedSize,
+      workerHeapBytes: after.workerHeap.usedSize - before.workerHeap.usedSize,
+      domNodes: after.dom.nodes - before.dom.nodes,
+      eventListeners: after.dom.jsEventListeners - before.dom.jsEventListeners,
+    };
+    result.lifecycleGrowth ??= [];
+    result.lifecycleGrowth.push(growth);
+    // Compare the same paused dashboard after GC, allowing small engine/cache fluctuations.
+    assert.ok(
+      growth.mainHeapBytes <= result.budgets.lifecycleHeapGrowthBytes,
+      `${label}: main retained heap grew over 1 MiB`,
+    );
+    assert.ok(
+      growth.workerHeapBytes <= result.budgets.lifecycleHeapGrowthBytes,
+      `${label}: Worker retained heap grew over 1 MiB`,
+    );
+    assert.ok(
+      growth.domNodes <= result.budgets.lifecycleDomNodeGrowth,
+      `${label}: retained DOM nodes grew`,
+    );
+    assert.ok(
+      growth.eventListeners <= result.budgets.lifecycleEventListenerGrowth,
+      `${label}: retained event listeners grew`,
+    );
+    assert.deepEqual(
+      after.wasmMemoryBytes,
+      before.wasmMemoryBytes,
+      `${label}: Wasm memory did not plateau`,
+    );
+    assert.equal(page.workers().length, 1, `${label}: expected one Worker`);
+    log("lifecycle memory verified", growth);
   }
   async function phase(name, durationMs) {
     const before = await sample(`${name}: before load (post-GC)`, true);
@@ -389,6 +457,12 @@ try {
     };
     item.observedTradesPerSecond = (item.generatedTrades * 1000) / elapsedMs;
     item.after = await sample(`${name}: after load (post-GC)`, true);
+    assert.equal(before.wasmMemoryBytes.length, 1, "Expected one Wasm memory");
+    assert.deepEqual(
+      item.after.wasmMemoryBytes,
+      before.wasmMemoryBytes,
+      "Wasm memory grew during sustained load",
+    );
     result.phases.push(item);
     await save();
     log("phase completed", {
@@ -456,6 +530,15 @@ try {
     result.pausePreservesTrades =
       paused.state.trades === pausedLater.state.trades;
     assert.ok(result.pausePreservesTrades, "Trades changed while paused");
+    // Warm route and event-handler code before measuring repeated lifecycle operations.
+    for (let i = 0; i < 10; i++) {
+      await resume();
+      await pause();
+      await page.getByRole("link", { name: "Settings", exact: true }).click();
+      await page.getByRole("link", { name: "Dashboard", exact: true }).click();
+      await page.getByRole("button", { name: "Resume", exact: true }).waitFor();
+    }
+    const lifecycleBaseline = await sample("lifecycle warm baseline", true);
     result.controlLatencies = [];
     for (let i = 0; i < 50; i++) {
       result.controlLatencies.push({
@@ -463,12 +546,18 @@ try {
         pauseMs: await pause(),
       });
     }
-    await sample("after 50 pause/resume cycles", true);
+    const afterControls = await sample("after 50 pause/resume cycles", true);
+    assertRetainedMemory(
+      lifecycleBaseline,
+      afterControls,
+      "50 pause/resume cycles",
+    );
     for (let i = 0; i < 50; i++) {
       await page.getByRole("link", { name: "Settings", exact: true }).click();
       await page.getByRole("link", { name: "Dashboard", exact: true }).click();
     }
-    await sample("after 100 route changes", true);
+    const afterRoutes = await sample("after 100 route changes", true);
+    assertRetainedMemory(afterControls, afterRoutes, "100 route changes");
     // Validate all completed batches in the long run with an independent exact replay.
     const final = await page.evaluate(() => {
       const s = window.__marketPerf.latest;
@@ -536,17 +625,40 @@ try {
       all50InstrumentsExact: true,
     };
     log("exact replay verified", result.accounting);
-    await page.getByRole("link", { name: "Settings", exact: true }).click();
-    for (let i = 0; i < 100; i++)
-      await page.getByRole("button", { name: "Apply settings" }).click();
-    await page.waitForFunction(
-      () =>
-        window.__marketPerf.runId === 102 &&
-        window.__marketPerf.status === "Running",
-    );
-    await page.getByRole("link", { name: "Dashboard", exact: true }).click();
-    await pause();
-    await sample("after 100 consecutive Apply resets", true);
+    let resetBaseline = afterRoutes;
+    for (let group = 0; group < 10; group++) {
+      await page.getByRole("link", { name: "Settings", exact: true }).click();
+      for (let i = 0; i < 100; i++) {
+        await page
+          .getByLabel("Instrument count", { exact: true })
+          .fill(i % 2 ? "50" : "1");
+        await page
+          .getByLabel("Updates per batch", { exact: true })
+          .fill(i % 2 ? "1000" : "1");
+        await page.getByRole("button", { name: "Apply settings" }).click();
+        await ready();
+      }
+      await page.getByRole("link", { name: "Dashboard", exact: true }).click();
+      await page.waitForFunction(
+        () => window.__marketPerf.latest?.runId === window.__marketPerf.runId,
+      );
+      await pause();
+      const afterResets = await sample(
+        `after ${(group + 1) * 100} alternating Apply resets`,
+        true,
+      );
+      assertRetainedMemory(
+        resetBaseline,
+        afterResets,
+        `Apply group ${group + 1}`,
+      );
+      assertRetainedMemory(
+        afterRoutes,
+        afterResets,
+        `Apply cumulative ${(group + 1) * 100}`,
+      );
+      resetBaseline = afterResets;
+    }
     result.liveWorkers = page.workers().length;
     result.createdWorkers = await page.evaluate(
       () => window.__marketPerf.createdWorkers,
@@ -556,8 +668,9 @@ try {
     assert.deepEqual(result.errors, []);
     result.finishedAt = new Date().toISOString();
     await save();
-    await context.close();
+    workerSession.dispose();
     workerSession = null;
+    await context.close();
     await sleep(1000);
     const finalTargets = await root.send("Target.getTargets");
     result.workerTargetsAfterContextClose = finalTargets.targetInfos.filter(
@@ -579,6 +692,7 @@ try {
     console.error(e);
     process.exitCode = 1;
   } finally {
+    workerSession?.dispose();
     await browser.close();
   }
 } finally {

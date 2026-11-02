@@ -320,6 +320,54 @@ describe("asynchronous Wasm initialization", () => {
     runtime.dispose();
     vi.useRealTimers();
   });
+  it("releases every obsolete generator after a large out-of-order Apply burst", async () => {
+    vi.useFakeTimers();
+    const pending: {
+      resolve: (g: Generator) => void;
+      reject: (error: Error) => void;
+    }[] = [];
+    const events: WorkerEvent[] = [];
+    const runtime = new ProducerRuntime(
+      () => new Promise((resolve, reject) => pending.push({ resolve, reject })),
+      (event) => events.push(event),
+    );
+    const generators: Generator[] = [];
+    try {
+      for (let run = 1; run <= 200; run++) runtime.handle(start(run));
+      for (let index = pending.length - 1; index >= 0; index--) {
+        if (index % 7 === 0) {
+          pending[index].reject(new Error("Obsolete initialization failed"));
+        } else {
+          const generator = mockGenerator();
+          generators.push(generator);
+          pending[index].resolve(generator);
+        }
+      }
+      await Promise.resolve();
+      expect(events.filter((event) => event.type === "ERROR")).toHaveLength(0);
+      expect(
+        events.filter(
+          (event) => event.type === "STATUS" && event.status === "Running",
+        ),
+      ).toEqual([{ type: "STATUS", runId: 200, status: "Running" }]);
+      expect(vi.getTimerCount()).toBe(1);
+      expect(generators[0].free).not.toHaveBeenCalled();
+      for (const generator of generators.slice(1))
+        expect(generator.free).toHaveBeenCalledOnce();
+      runtime.dispose();
+      runtime.dispose();
+      await vi.advanceTimersByTimeAsync(10000);
+      for (const generator of generators) {
+        expect(generator.free).toHaveBeenCalledOnce();
+        expect(generator.generateBatch).not.toHaveBeenCalled();
+      }
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      runtime.dispose();
+      vi.useRealTimers();
+    }
+  });
+
   it("surfaces Wasm initialization failure", async () => {
     const events: WorkerEvent[] = [];
     const runtime = new ProducerRuntime(
